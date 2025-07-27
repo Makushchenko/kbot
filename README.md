@@ -69,7 +69,7 @@ go build -ldflags "-X=github.com/Makushchenko/kbot/cmd.appVersion=v1.0.0" -o kbo
   ./kbot version
   ```
 
-## 🐛 Start Telegram Bot Integration (feature/telebot branch)
+## Start Telegram Bot Integration (feature/telebot branch)
 
 ```bash
 git status
@@ -78,7 +78,7 @@ git checkout -b feature/telebot
 
 Edit `cmd/kbot.go`:
 
-### ➕ Add import
+### Add import
 
 ```go
 import (
@@ -92,7 +92,7 @@ import (
 )
 ```
 
-### ➕ Add global variable
+### Add global variable
 
 ```go
 var (
@@ -100,7 +100,7 @@ var (
 )
 ```
 
-### 🖊️ Basic Setup (v1.0.1)
+### Basic Setup (v1.0.1)
 
 Update `Run:` function with basic bot setup:
 
@@ -125,13 +125,13 @@ Run: func(cmd *cobra.Command, args []string) {
 },
 ```
 
-### ➕ Add alias to `kbotCmd`
+### Add alias to `kbotCmd`
 
 ```go
 Aliases: []string{"start"},
 ```
 
-### 🛠️ Format and Build (v1.0.1)
+### Format and Build (v1.0.1)
 
 ```bash
 gofmt -s -w ./
@@ -143,7 +143,7 @@ go build -ldflags "-X=github.com/Makushchenko/kbot/cmd.appVersion=v1.0.1"
 
 ---
 
-## ✨ Enhance Telegram Bot (v1.0.2)
+## Enhance Telegram Bot (v1.0.2)
 
 Update `Run:` function to handle payload:
 
@@ -161,7 +161,7 @@ kbot.Handle(telebot.OnText, func(m telebot.Context) error {
 })
 ```
 
-### 🛠️ Rebuild with updated logic (v1.0.2)
+### Rebuild with updated logic (v1.0.2)
 
 ```bash
 gofmt -s -w ./
@@ -170,12 +170,12 @@ go build -ldflags "-X=github.com/Makushchenko/kbot/cmd.appVersion=v1.0.2"
 ./kbot start
 ```
 
-## 🤖 Create Telegram Bot and Export Token
+## Create Telegram Bot and Export Token
 
 * Create a bot via [@BotFather](https://t.me/BotFather)
 * Copy the token
 
-### 🔐 Use `read` to hide API token from logs
+### Use `read` to hide API token from logs
 
 ```bash
 read -s TELE_TOKEN
@@ -185,7 +185,7 @@ export TELE_TOKEN
 
 > The `read -s` command is used to securely input the Telegram API token without displaying it on the terminal (to avoid leaking it in logs or history).
 
-## 🧪 What happens on /start hello
+## What happens on /start hello
 
 When a user sends the command `/start hello` to the bot, it extracts the payload `hello` and responds:
 
@@ -195,7 +195,7 @@ Hello I'm Kbot v1.0.2!
 
 The version is dynamically injected via the build process.
 
-## 🔖 Tag and Commit (v1.0.2)
+## Tag and Commit (v1.0.2)
 
 ```bash
 git add .
@@ -204,7 +204,7 @@ git tag v1.0.2
 git push -u origin feature/telebot
 ```
 
-## 🔀 Merge into main via PullRequest
+## Merge into main via PullRequest
 
 ```bash
 git checkout main
@@ -214,4 +214,4 @@ git status
 
 ---
 
-✅ The initial Telegram bot build used version `v1.0.0`. After enhancing it to handle messages like `/start hello`, the project was rebuilt with version `v1.0.2` and the commit was tagged accordingly.
+The initial Telegram bot build used version `v1.0.0`. After enhancing it to handle messages like `/start hello`, the project was rebuilt with version `v1.0.2` and the commit was tagged accordingly.
