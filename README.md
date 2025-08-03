@@ -215,3 +215,6 @@ git status
 ---
 
 The initial Telegram bot build used version `v1.0.1`. After enhancing it to handle messages like `/start hello`, the project was rebuilt with version `v1.0.2` and the commit was tagged accordingly.
+
+git describe --tags --abbrev=0
+git rev-parse --short HEAD
