@@ -216,5 +216,16 @@ git status
 
 The initial Telegram bot build used version `v1.0.1`. After enhancing it to handle messages like `/start hello`, the project was rebuilt with version `v1.0.2` and the commit was tagged accordingly.
 
+---
+
+## Makefile and Dockerfile
+```bash
 git describe --tags --abbrev=0
 git rev-parse --short HEAD
+#
+git commit --amend --message "changed message"
+git push --force-with-lease origin feature/makefile
+#
+read -s CR_PAT
+echo $CR_PAT | docker login ghcr.io -u Makushchenko --password-stdin
+```
