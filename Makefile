@@ -20,13 +20,16 @@ test:
 get:
 	go get
 
+#############
+# Build GO artifact depends on host OS/Arch
+#############
 build: format get
 	CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
 	go build -v -o ${APP} \
 	-ldflags "-X=github.com/Makushchenko/kbot/cmd.appVersion=${VERSION}"
 
 #############
-# GO aftifact build
+# Build GO artifact for dedicated OS/Arch
 #############
 linux:
 	@ARCH=$$(go env GOHOSTARCH); \
@@ -50,7 +53,7 @@ windows:
 			build
 
 #############
-# Image build
+# Image build depends on host OS/Arch
 #############
 image:
 	docker build \
@@ -59,6 +62,9 @@ image:
 		--target final-${TARGETOS} \
 		-t ${REGISTRY}/${APP}:${VERSION}-${TARGETOS}-${TARGETARCH} .
 
+#############
+# Image build for dedicated OS/Arch
+#############
 linux-image:
 	docker build \
 		--build-arg TARGETOS=linux \
@@ -94,11 +100,14 @@ windows-image: init-builder
 		--load .
 
 #############
-# Push to registry
+# Push to registry depends on host OS/Arch
 #############
 push:
 	docker push ${REGISTRY}/${APP}:${VERSION}-${TARGETOS}-${TARGETARCH}
 
+#############
+# Push to registry for dedicated OS/Arch
+#############
 linux-push:
 	docker push ${REGISTRY}/${APP}:${VERSION}-linux-${TARGETARCH}
 
@@ -112,7 +121,7 @@ windows-push:
 	docker push ${REGISTRY}/${APP}:${VERSION}-windows-${TARGETARCH}
 
 #############
-# Clean local aftifacts and images
+# Clean all local artifacts and images
 #############
 clean:
 	@rm -f ${APP} ${APP}.exe

@@ -218,14 +218,75 @@ The initial Telegram bot build used version `v1.0.1`. After enhancing it to hand
 
 ---
 
-## Makefile and Dockerfile
+# Makefile & Dockerfile
+
+This guide explains how to build the project using the provided Makefile and Dockerfile, as well as essential Git and GitHub Container Registry commands for versioning and publishing.
+
+---
+
+## Step 1: Commands *depends on host OS/Arch*
+
+Use these primary Makefile targets without specifying a platform; they automatically use your **host** OS and architecture.
+
 ```bash
+# Build binary for host OS/Arch
+make build
+
+# Build Docker image for host OS/Arch
+make image
+
+# Push image tagged with host OS/Arch
+make push
+
+# Remove all binaries and Docker images for all OS/Arch
+make clean
+```
+
+---
+
+## Step 2: Commands *for dedicated OS/Arch*
+
+When you need explicit control over platform builds, use dedicated Makefile targets:
+
+```bash
+# Build binary for specific platforms
+make linux    # Linux (host architecture)
+make arm      # Linux/ARM64
+make windows  # Windows 
+make macos    # macOS 
+
+# Build Docker images for specific platforms
+make linux-image    # Linux (host architecture)
+make arm-image      # Linux/ARM64
+make windows-image  # Windows (in development)
+make macos-image    # macOS (in development)
+
+# Push these images to registry
+make linux-push     # Push Linux image
+make arm-push       # Push Linux/ARM64 image
+make windows-push   # Push Windows image
+make macos-push     # Push macOS image (in development)
+
+# Remove all binaries and Docker images for all OS/Arch
+make clean
+```
+
+---
+
+## Step 3: Additional setup commands
+
+These commands help with version tagging, commit management, and authenticating to GitHub Container Registry.
+
+```bash
+# Retrieve version metadata
 git describe --tags --abbrev=0
 git rev-parse --short HEAD
-#
+
+# Amend the last commit message and push forcefully
 git commit --amend --message "changed message"
 git push --force-with-lease origin feature/makefile
-#
+
+# Authenticate to GitHub Container Registry
 read -s CR_PAT
 echo $CR_PAT | docker login ghcr.io -u Makushchenko --password-stdin
 ```
