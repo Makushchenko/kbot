@@ -1,12 +1,16 @@
-APP          := $(shell basename $(shell git remote get-url origin) .git)
-REGISTRY     := ghcr.io/makushchenko
-VERSION    	 := $(shell git describe --tags --abbrev=0)-$(shell git rev-parse --short HEAD)
-BUILDER_NAME := multiarch-builder
-TARGETOS     ?= linux
-TARGETARCH   ?= amd64
+APP         := $(shell basename $(shell git remote get-url origin) .git)
+REGISTRY    := ghcr.io/makushchenko
+VERSION     := $(shell git describe --tags --abbrev=0)-$(shell git rev-parse --short HEAD)
+TARGETOS    ?= linux
+ARCH        ?= amd64
+TARGETARCH  ?= $(ARCH)
 
-.PHONY: format lint test get build linux arm macos windows image linux-image arm-image macos-image init-builder windows-image \
-		push linux-push arm-push macos-push windows-push clean
+.PHONY: init-qemu format lint test get build linux arm macos windows image linux-image arm-image macos-image init-builder windows-image \
+        push linux-push arm-push macos-push windows-push clean
+
+# Step: register QEMU handlers for cross-platform builds (needed when TARGETOS/TARGETARCH differs from host)
+init-qemu:
+	@docker run --privileged --rm tonistiigi/binfmt --install all
 
 format:
 	gofmt -s -w ./
@@ -21,7 +25,7 @@ get:
 	go get
 
 #############
-# Build GO artifact depends on host OS/Arch
+# Build GO artifact (depends on host OS/Arch)
 #############
 build: format get
 	CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
@@ -31,88 +35,82 @@ build: format get
 #############
 # Build GO artifact for dedicated OS/Arch
 #############
-linux:
+linux: format get
 	@ARCH=$$(go env GOHOSTARCH); \
 	echo "→ building ${APP} for linux/$$ARCH"; \
 	$(MAKE) TARGETOS=linux TARGETARCH=$$ARCH build
 
-arm:
+arm: format get
 	@echo "→ building ${APP} for linux/arm64"; \
 	$(MAKE) TARGETOS=linux TARGETARCH=arm64 build
 
-macos:
+macos: format get
 	@ARCH=$$(go env GOHOSTARCH); \
 	echo "→ building ${APP} for darwin/$$ARCH"; \
 	$(MAKE) TARGETOS=darwin TARGETARCH=$$ARCH build
 
-windows:
+windows: format get
 	@ARCH=$$(go env GOHOSTARCH); \
 	echo "→ building ${APP}.exe for windows/$$ARCH"; \
 	$(MAKE) TARGETOS=windows TARGETARCH=$$ARCH \
-			APP=${APP}.exe \
-			build
+		APP=${APP}.exe \
+		build
 
 #############
-# Image build depends on host OS/Arch
+# Image build (with QEMU) depends on host OS/Arch
 #############
 image:
 	docker build \
 		--build-arg TARGETOS=$$(go env GOHOSTOS) \
 		--build-arg TARGETARCH=$$(go env GOHOSTARCH) \
-		--target final-${TARGETOS} \
 		-t ${REGISTRY}/${APP}:${VERSION}-${TARGETOS}-${TARGETARCH} .
 
 #############
 # Image build for dedicated OS/Arch
 #############
-linux-image:
+linux-image: init-qemu
 	docker build \
+		--platform=linux/${TARGETARCH} \
 		--build-arg TARGETOS=linux \
 		--build-arg TARGETARCH=${TARGETARCH} \
-		--target final-linux \
-		-t ${REGISTRY}/${APP}:${VERSION}-${TARGETOS}-${TARGETARCH} .
+		-t ${REGISTRY}/${APP}:${VERSION}-linux-${TARGETARCH} .
 
-arm-image:
+arm-image: init-qemu
 	docker build \
-		--build-arg TARGETOS=linux \
+		--platform=${TARGETOS}/arm64 \
+		--build-arg TARGETOS=${TARGETOS} \
 		--build-arg TARGETARCH=arm64 \
-		--target final-linux \
-		-t ${REGISTRY}/${APP}:${VERSION}-${TARGETOS}-${TARGETARCH} .
+		-t ${REGISTRY}/${APP}:${VERSION}-${TARGETOS}-arm64 .
 
-macos-image:
-	@echo "In development..."
+macos-image: init-qemu
+	docker build \
+		--platform=darwin/${TARGETARCH} \
+		--build-arg TARGETOS=darwin \
+		--build-arg TARGETARCH=${TARGETARCH} \
+		-t ${REGISTRY}/${APP}:${VERSION}-macos-${TARGETARCH} .
 
-init-builder:
-	@docker buildx inspect ${BUILDER_NAME} >/dev/null 2>&1 \
-		|| docker buildx create --use --name ${BUILDER_NAME}
-
-windows-image: init-builder
-	@echo "---EARLY ACCESS---"
-	@ARCH=$$(go env GOHOSTARCH); \
-	docker buildx build \
-		--builder ${BUILDER_NAME}  \
-		--platform windows/$$ARCH \
+windows-image: init-qemu
+	docker build \
+		--platform=windows/${TARGETARCH} \
 		--build-arg TARGETOS=windows \
-		--build-arg TARGETARCH=$$ARCH \
-		--build-arg APP=${APP}.exe \
-		--target final-windows \
-		-t ${REGISTRY}/${APP}:${VERSION}-${TARGETOS}-${TARGETARCH} \
-		--load .
+		--build-arg TARGETARCH=${TARGETARCH} \
+		--build-arg APP=${APP} \
+		-t ${REGISTRY}/${APP}:${VERSION}-windows-${TARGETARCH} .
 
 #############
-# Push to registry depends on host OS/Arch
+# Push to registry (depends on host OS/Arch)
 #############
 push:
 	docker push ${REGISTRY}/${APP}:${VERSION}-${TARGETOS}-${TARGETARCH}
 
 #############
-# Push to registry for dedicated OS/Arch
+# Push for dedicated OS/Arch
 #############
 linux-push:
 	docker push ${REGISTRY}/${APP}:${VERSION}-linux-${TARGETARCH}
 
 arm-push:
-	docker push ${REGISTRY}/${APP}:${VERSION}-linux-arm64
+	docker push ${REGISTRY}/${APP}:${VERSION}-${TARGETOS}-arm64
 
 macos-push:
 	@echo "In development..."
@@ -121,10 +119,11 @@ windows-push:
 	docker push ${REGISTRY}/${APP}:${VERSION}-windows-${TARGETARCH}
 
 #############
-# Clean all local artifacts and images
+# Clean all artifacts and images for all OS/Arch
 #############
 clean:
 	@rm -f ${APP} ${APP}.exe
 	-@docker rmi ${REGISTRY}/${APP}:${VERSION}-${TARGETOS}-${TARGETARCH} \
-				${REGISTRY}/${APP}:${VERSION}-linux-arm64 \
-				${REGISTRY}/${APP}:${VERSION}-windows-${TARGETARCH}
+			${REGISTRY}/${APP}:${VERSION}-linux-${TARGETARCH} \
+			${REGISTRY}/${APP}:${VERSION}-macos-${TARGETARCH} \
+			${REGISTRY}/${APP}:${VERSION}-windows-${TARGETARCH}  2>/dev/null || true
