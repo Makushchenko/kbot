@@ -298,4 +298,8 @@ git push --force-with-lease origin feature/makefile
 # Authenticate to GitHub Container Registry
 read -s CR_PAT
 echo $CR_PAT | docker login ghcr.io -u Makushchenko --password-stdin
+
+# Install golangci-lint
+curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.3.1
+golangci-lint --version
 ```

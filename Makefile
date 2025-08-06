@@ -13,16 +13,16 @@ init-qemu:
 	@docker run --privileged --rm tonistiigi/binfmt --install all
 
 format:
-	gofmt -s -w ./
+	@gofmt -s -w ./
 
 lint:
-	golint
+	@golangci-lint run
 
 test:
-	go test -v
+	@go test -v
 
 get:
-	go get
+	@go get
 
 #############
 # Build GO artifact (depends on host OS/Arch)
