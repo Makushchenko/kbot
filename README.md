@@ -253,22 +253,31 @@ When you need explicit control over platform builds, use dedicated Makefile targ
 make linux    # Linux (host architecture)
 make arm      # Linux/ARM64
 make windows  # Windows 
-make macos    # macOS 
+make macos    # macOS
 
 # Build Docker images for specific platforms
-make linux-image    # Linux (host architecture)
-make arm-image      # Linux/ARM64
-make windows-image  # Windows (in development)
-make macos-image    # macOS (in development)
+make linux-image               # Linux (host architecture)
+make linux-image ARCH=arm64    # Linux (specify architecture)
+make linux-image ARCH=amd64    # Linux (specify architecture)
+make arm-image                 # Linux/ARM64
+make arm-image TARGETOS=linux  # Specify OS/ARM64
+make arm-image TARGETOS=darwin # Specify OS/ARM64
+make windows-image             # Windows (in development)
+make windows-image ARCH=       # Windows (in development)(specify architecture)
+make macos-image               # macOS (in development)
+make macos-image ARCH=arm64    # macOS (in development) (specify architecture)
+make macos-image ARCH=amd64    # macOS (in development) (specify architecture)
 
-# Push these images to registry
+# Push these images for specific platforms to registry
 make linux-push     # Push Linux image
 make arm-push       # Push Linux/ARM64 image
 make windows-push   # Push Windows image
 make macos-push     # Push macOS image (in development)
 
 # Remove all binaries and Docker images for all OS/Arch
-make clean
+make clean 
+make clean ARCH=arm64
+make clean TARGETOS=darwin ARCH=arm64
 ```
 
 ---
