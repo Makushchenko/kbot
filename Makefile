@@ -35,21 +35,21 @@ build: format get
 #############
 # Build GO artifact for dedicated OS/Arch
 #############
-linux: format get
+linux: format lint get
 	@ARCH=$$(go env GOHOSTARCH); \
 	echo "→ building ${APP} for linux/$$ARCH"; \
 	$(MAKE) TARGETOS=linux TARGETARCH=$$ARCH build
 
-arm: format get
+arm: format lint get
 	@echo "→ building ${APP} for linux/arm64"; \
 	$(MAKE) TARGETOS=linux TARGETARCH=arm64 build
 
-macos: format get
+macos: format lint get
 	@ARCH=$$(go env GOHOSTARCH); \
 	echo "→ building ${APP} for darwin/$$ARCH"; \
 	$(MAKE) TARGETOS=darwin TARGETARCH=$$ARCH build
 
-windows: format get
+windows: format lint get
 	@ARCH=$$(go env GOHOSTARCH); \
 	echo "→ building ${APP}.exe for windows/$$ARCH"; \
 	$(MAKE) TARGETOS=windows TARGETARCH=$$ARCH \
@@ -123,7 +123,11 @@ windows-push:
 #############
 clean:
 	@rm -f ${APP} ${APP}.exe
-	-@docker rmi ${REGISTRY}/${APP}:${VERSION}-${TARGETOS}-${TARGETARCH} \
+	@docker rmi ${REGISTRY}/${APP}:${VERSION}-${TARGETOS}-${TARGETARCH} \
 			${REGISTRY}/${APP}:${VERSION}-linux-${TARGETARCH} \
+			${REGISTRY}/${APP}:${VERSION}-linux-amd64 \
+			${REGISTRY}/${APP}:${VERSION}-linux-arm64 \
 			${REGISTRY}/${APP}:${VERSION}-macos-${TARGETARCH} \
+			${REGISTRY}/${APP}:${VERSION}-macos-amd64 \
+			${REGISTRY}/${APP}:${VERSION}-macos-arm64 \
 			${REGISTRY}/${APP}:${VERSION}-windows-${TARGETARCH}  2>/dev/null || true

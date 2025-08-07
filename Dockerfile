@@ -20,16 +20,7 @@ WORKDIR /
 
 COPY --from=builder /go/src/app/kbot /kbot
 
-#COPY --from=alpine:latest /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=alpine:latest /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 ENTRYPOINT ["/kbot"]
 CMD ["version"]
-
-# # ─── final stage: Windows ─────────────────────────────
-# FROM mcr.microsoft.com/windows/nanoserver:1809 AS final-windows
-# WORKDIR C:/app
-
-# COPY --from=builder /go/src/app/kbot.exe /kbot.exe
-
-# ENTRYPOINT ["C:\\app\\kbot.exe"]
-# CMD ["version"]
