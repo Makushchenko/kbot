@@ -4,7 +4,7 @@ A simple command-line tool generated with [Cobra](https://github.com/spf13/cobra
 
 ## Prerequisites
 
-* Go 1.18 or newer
+* Go 1.24 or newer
 * `$GOPATH/bin` or `/usr/local/go/bin` in your `PATH`
 
 ## Installation & Setup
