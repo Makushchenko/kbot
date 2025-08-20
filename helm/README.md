@@ -80,7 +80,7 @@ gh release upload v1.0.4 ./helm/kbot-0.1.0.tgz
 Install directly from GitHub release:
 
 ```bash
-helm install kbot https://github.com/makushchenko/kbot/releases/download/v1.0.4/kbot-0.1.0.tgz \
+helm install kbot https://github.com/Makushchenko/kbot/releases/download/v1.0.4/kbot-0.1.0.tgz \
   -n kbot --create-namespace \
   --set-string secret.value="$TELE_TOKEN" \
   --set-string registry.username="$GH_USER" \
