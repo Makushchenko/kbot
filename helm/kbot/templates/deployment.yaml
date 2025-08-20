@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    version: {{ .Values.image.tag }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+        version: {{ .Values.image.tag }}
+    spec:
+      imagePullSecrets:
+        - name: {{ .Values.imagePullSecrets.name | default "ghcr-creds" }}
+      containers:
+        - name: {{ .Chart.Name }}     
+          image: {{ .Values.image.repository }}/{{ .Chart.Name }}:{{ .Values.image.tag }}-{{ .Values.image.os | default "linux" }}-{{ .Values.image.arch | default "amd64" }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/kbot"]
+          args: ["start"]         
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          volumeMounts:
+            - mountPath: /dev/mem
+              name: dev-mem
+          env:
+            - name: {{ .Values.secret.env }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secret.name }}
+                  key:  {{ .Values.secret.key }}
+      volumes:
+        - hostPath:
+            path: /dev/mem
+            type: ""
+          name: dev-mem
