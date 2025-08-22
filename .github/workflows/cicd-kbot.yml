@@ -1,5 +1,5 @@
 name: CI/CD kbot
-run-name: ${{ github.triggering_actor }} is triggered {{ github.workflow }}
+run-name: ${{ github.triggering_actor }} is triggered \"${{ github.workflow }}\" workflow
 
 on:
   push:
