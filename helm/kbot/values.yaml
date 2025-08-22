@@ -22,10 +22,10 @@ secret:
 image:
   registry: "ghcr.io"
   repository: "makushchenko/kbot"
-  tag: "v1.0.4-57f1faa"
+  tag: "v1.0.4-1c31ce6"
   os: linux
   arch: amd64
-  pullPolicy: Always  
+  pullPolicy: Always
 # This is for setting up a service more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/
 service:
   # This sets the service type more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
