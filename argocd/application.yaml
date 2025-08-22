@@ -1,0 +1,39 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kbot
+  namespace: argocd
+spec:
+  project: kbot
+  source:
+    repoURL: https://github.com/Makushchenko/kbot.git
+    targetRevision: develop
+    path: helm
+    helm:
+      parameters:
+        # point the chart to your existing pull secret and TELE_TOKEN secret
+        - name: imagePullSecrets.name
+          value: ghcr-creds
+        - name: secret.name
+          value: kbot
+        - name: secret.key
+          value: token
+        - name: secret.env
+          value: TELE_TOKEN
+        # set image you want (optional – otherwise chart defaults apply)
+        - name: image.repository
+          value: ghcr.io/makushchenko
+        - name: image.tag
+          value: v1.0.4-d3e5630
+        - name: image.pullPolicy
+          value: Always
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kbot
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
