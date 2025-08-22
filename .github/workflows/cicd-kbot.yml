@@ -6,6 +6,9 @@ on:
     branches:
       - develop
 
+env:
+  REGISTRY: ghcr.io
+
 jobs:
   ci:
     name: CI
@@ -14,6 +17,8 @@ jobs:
       - 
         name: Checkout
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0        
       - 
         name: Run test
         run: make test
@@ -21,6 +26,9 @@ jobs:
         name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io
+          registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}        
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - 
+        name: Build & Push
+          run: make image push                  
