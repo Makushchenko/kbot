@@ -1,57 +1,47 @@
 # CI/CD kbot — Workflow Scheme
 
 ```mermaid
-flowchart LR
-  %% Trigger → Workflow
-  dev([Push to branch: develop]) --> gha[GitHub Actions: CI/CD kbot]
+flowchart TD
+  A[Push to branch: develop] --> B[GitHub Actions workflow: CI/CD kbot]
 
-  %% CI job
-  subgraph CI [Job CI]
-    direction LR
-    checkout1[Checkout]
-    test1[Run tests
-make test]
-    login[Login to GHCR]
-    buildpush[Build & push image
-make image push]
-    checkout1 --> test1 --> login --> buildpush
+  subgraph CI [Job: CI]
+    direction TB
+    C1[Checkout]
+    C2[Run tests (make test)]
+    C3[Login to GHCR]
+    C4[Build and push image (make image push)]
+    C1 --> C2 --> C3 --> C4
   end
 
-  gha --> CI
-  ghcr[(GHCR registry)]
-  buildpush --> ghcr
+  B --> CI
+  GHCR[(GitHub Container Registry)]
+  C4 --> GHCR
 
-  %% CD job
-  subgraph CD [Job CD]
-    direction LR
-    checkout2[Checkout]
-    calcver[Compute VERSION]
-    bump[Update helm/values.yaml
-image.tag]
-    commitpush[Commit & push]
-    checkout2 --> calcver --> bump --> commitpush
+  subgraph CD [Job: CD]
+    direction TB
+    D1[Checkout]
+    D2[Compute VERSION]
+    D3[Update Helm values (image tag)]
+    D4[Commit and push]
+    D1 --> D2 --> D3 --> D4
   end
 
   CI --> CD
+  REPO[(GitHub repo)]
+  D4 --> REPO
 
-  repo[(GitHub repo: Makushchenko/kbot)]
-  commitpush --> repo
-
-  %% Argo CD auto-sync
-  subgraph Argo [Argo CD]
-    direction LR
-    app[Application: kbot (auto-sync)]
-    render[Helm render at path
-helm/kbot]
-    apply[Apply to cluster
-prune & self-heal]
-    app --> render --> apply
+  subgraph ARGO [Argo CD]
+    direction TB
+    E1[Application: kbot (auto sync)]
+    E2[Helm render at path helm/kbot]
+    E3[Apply to cluster]
+    E1 --> E2 --> E3
   end
 
-  repo --> Argo
-  k8s[(Kubernetes namespace: kbot)]
-  apply --> k8s
-  k8s --> ghcr
+  REPO --> ARGO
+  K8S[(Kubernetes namespace: kbot)]
+  E3 --> K8S
+  K8S --> GHCR
 ```
 
 ---
