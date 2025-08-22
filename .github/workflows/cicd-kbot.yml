@@ -15,6 +15,9 @@ env:
 
 jobs:
   ci:
+    permissions:
+      contents: write
+      packages: write
     name: CI
     runs-on: ubuntu-latest
     steps:
@@ -35,9 +38,6 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - 
         name: Build & Push
-        permissions:
-          contents: write
-          packages: write
         run: |
           echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u Makushchenko --password-stdin
           make image push                  
