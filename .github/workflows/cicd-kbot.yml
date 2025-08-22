@@ -35,4 +35,6 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - 
         name: Build & Push
+        env:
+          REGISTRY: ${{ env.REGISTRY }}
         run: make image push                  
