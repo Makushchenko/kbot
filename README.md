@@ -307,42 +307,58 @@ golangci-lint --version
 
 ## CI/CD kbot — Workflow Scheme
 
+Copy‑paste this Mermaid diagram into your **README.md**. GitHub renders it natively.
+
 ```mermaid
 flowchart LR
-  %% Triggers
-  dev["Developer pushes to <b>develop</b>"] -->|on: push (develop)| gha[["GitHub Actions\nWorkflow: <i>CI/CD kbot</i>"]]
+  %% Trigger
+  dev[Developer pushes to branch: develop]
+  gha[GitHub Actions workflow: CI/CD kbot]
+
+  dev -->|on: push (develop)| gha
 
   %% CI job
-  subgraph CI[Job: CI]
+  subgraph job_ci [Job: CI]
     direction LR
-    checkout1[Checkout] --> test1[Run tests\n<code>make test</code>] --> login[Login to GHCR\n<code>docker/login-action</code>] --> buildpush[Build & Push image\n<code>make image push</code>]
+    checkout1[Checkout]
+    test1[Run tests: make test]
+    login[Login to GHCR]
+    buildpush[Build & push image: make image push]
+    checkout1 --> test1 --> login --> buildpush
   end
 
-  gha --> CI
-  buildpush --> ghcr[("GHCR\n<code>ghcr.io/&lt;owner&gt;/&lt;repo&gt;</code>")]
+  gha --> job_ci
+  ghcr[(GHCR registry)]
+  buildpush --> ghcr
 
   %% CD job
-  subgraph CD[Job: CD]
+  subgraph job_cd [Job: CD]
     direction LR
-    checkout2[Checkout] --> calcver["Compute VERSION\n<code>git describe --tags</code> + <code>rev-parse --short</code>"] --> bump["Update Helm values\n<code>yq -i .image.tag=$VERSION helm/values.yaml</code>"] --> commitpush["Commit & push\n<code>git commit && git push</code>"]
+    checkout2[Checkout]
+    calcver[Compute VERSION]
+    bump[Update helm/values.yaml image.tag]
+    commitpush[Commit & push to repo]
+    checkout2 --> calcver --> bump --> commitpush
   end
 
-  CI -->|needs: ci| CD
-  commitpush --> repo[("GitHub Repo\n<code>Makushchenko/kbot</code>")]
+  job_ci --> job_cd
 
-  %% Argo CD auto-sync path
-  subgraph ArgoCD[Argo CD in cluster]
+  repo[(Git repo: Makushchenko/kbot)]
+  commitpush --> repo
+
+  %% Argo CD auto-sync
+  subgraph argocd [Argo CD]
     direction LR
-    app[Application: <b>kbot</b>\nsource: <code>path=helm/kbot</code>\nauto-sync: <code>enabled</code>] --> render["Helm render\n(Chart.yaml detected)"] --> apply["Apply to cluster\n(prune & selfHeal)"]
+    app[Application: kbot (auto-sync)]
+    render[Render Helm chart at path: helm/kbot]
+    apply[Apply to cluster (prune & self-heal)]
+    app --> render --> apply
   end
 
-  repo -->|values.yaml changed| ArgoCD
-  apply --> k8s[("Kubernetes (ns: <code>kbot</code>)\nDeployment/Service …")]
+  repo -->|new commit| argocd
+  k8s[(Kubernetes namespace: kbot)]
+  apply --> k8s
   k8s -->|pulls image| ghcr
-
-  %% Notes
-  classDef store fill:#f8f8ff,stroke:#666,stroke-width:1px;
-  class ghcr,repo,k8s store;
 ```
 
 ---
