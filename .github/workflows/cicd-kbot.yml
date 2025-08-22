@@ -15,9 +15,6 @@ env:
 
 jobs:
   ci:
-    permissions:
-      contents: write
-      packages: write
     name: CI
     runs-on: ubuntu-latest
     steps:
@@ -35,9 +32,8 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GH_TOKEN }}
       - 
         name: Build & Push
-        run: |
-          echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u Makushchenko --password-stdin
+        run:
           make image push                  
