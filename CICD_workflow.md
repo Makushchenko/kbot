@@ -7,7 +7,7 @@ flowchart TD
   subgraph CI [Job: CI]
     direction TB
     C1[Checkout]
-    C2[Run tests (make test)]
+    C2[Run tests: make test]
     C3[Login to GHCR]
     C4[Build and push image (make image push)]
     C1 --> C2 --> C3 --> C4
