@@ -9,7 +9,7 @@ flowchart TD
     C1[Checkout]
     C2[Run tests: make test]
     C3[Login to GHCR]
-    C4[Build and push image (make image push)]
+    C4[Build and push image: make image push]
     C1 --> C2 --> C3 --> C4
   end
 
@@ -21,7 +21,7 @@ flowchart TD
     direction TB
     D1[Checkout]
     D2[Compute VERSION]
-    D3[Update Helm values (image tag)]
+    D3[Update Helm values: image tag]
     D4[Commit and push]
     D1 --> D2 --> D3 --> D4
   end
@@ -32,14 +32,14 @@ flowchart TD
 
   subgraph ARGO [Argo CD]
     direction TB
-    E1[Application: kbot (auto sync)]
+    E1[Application: kbot auto sync]
     E2[Helm render at path helm/kbot]
     E3[Apply to cluster]
     E1 --> E2 --> E3
   end
 
   REPO --> ARGO
-  K8S[(Kubernetes namespace: kbot)]
+  K8S[Kubernetes namespace: kbot]
   E3 --> K8S
   K8S --> GHCR
 ```
