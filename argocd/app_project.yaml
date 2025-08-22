@@ -1,0 +1,15 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: kbot
+  namespace: argocd
+spec:
+  description: kbot project
+  sourceRepos:
+    - https://github.com/Makushchenko/kbot.git
+  destinations:
+    - namespace: kbot
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
