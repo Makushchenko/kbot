@@ -303,3 +303,54 @@ echo $CR_PAT | docker login ghcr.io -u Makushchenko --password-stdin
 curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.3.1
 golangci-lint --version
 ```
+---
+
+## CI/CD kbot — Workflow Scheme
+
+```mermaid
+flowchart LR
+  %% Triggers
+  dev["Developer pushes to <b>develop</b>"] -->|on: push (develop)| gha[["GitHub Actions\nWorkflow: <i>CI/CD kbot</i>"]]
+
+  %% CI job
+  subgraph CI[Job: CI]
+    direction LR
+    checkout1[Checkout] --> test1[Run tests\n<code>make test</code>] --> login[Login to GHCR\n<code>docker/login-action</code>] --> buildpush[Build & Push image\n<code>make image push</code>]
+  end
+
+  gha --> CI
+  buildpush --> ghcr[("GHCR\n<code>ghcr.io/&lt;owner&gt;/&lt;repo&gt;</code>")]
+
+  %% CD job
+  subgraph CD[Job: CD]
+    direction LR
+    checkout2[Checkout] --> calcver["Compute VERSION\n<code>git describe --tags</code> + <code>rev-parse --short</code>"] --> bump["Update Helm values\n<code>yq -i .image.tag=$VERSION helm/values.yaml</code>"] --> commitpush["Commit & push\n<code>git commit && git push</code>"]
+  end
+
+  CI -->|needs: ci| CD
+  commitpush --> repo[("GitHub Repo\n<code>Makushchenko/kbot</code>")]
+
+  %% Argo CD auto-sync path
+  subgraph ArgoCD[Argo CD in cluster]
+    direction LR
+    app[Application: <b>kbot</b>\nsource: <code>path=helm/kbot</code>\nauto-sync: <code>enabled</code>] --> render["Helm render\n(Chart.yaml detected)"] --> apply["Apply to cluster\n(prune & selfHeal)"]
+  end
+
+  repo -->|values.yaml changed| ArgoCD
+  apply --> k8s[("Kubernetes (ns: <code>kbot</code>)\nDeployment/Service …")]
+  k8s -->|pulls image| ghcr
+
+  %% Notes
+  classDef store fill:#f8f8ff,stroke:#666,stroke-width:1px;
+  class ghcr,repo,k8s store;
+```
+
+---
+
+### Reading the diagram
+
+* **CI** builds and pushes a multi‑arch image to **GHCR**.
+* **CD** bumps `helm/values.yaml:image.tag` and pushes back to the repo.
+* **Argo CD** auto‑sync sees the new commit, renders the Helm chart in `helm`, and applies it to the **k8s** cluster. Pods then pull the freshly built image from **GHCR**.
+
+> Tip: If your Argo CD Application had `helm.parameters`, those would override chart `values.yaml`. Removing them lets `values.yaml` control the tag bump shown here.
