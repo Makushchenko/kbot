@@ -50,5 +50,5 @@ jobs:
     - run: |
         git config user.name github-actions
         git config user.email github-actions@github.com
-        git commit -m "set image tag to ${VERSION}"
+        git commit -am "set image tag to ${VERSION}"
         git push origin ${{ github.ref_name }}
