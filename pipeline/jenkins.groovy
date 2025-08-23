@@ -1,5 +1,9 @@
 pipeline {
-    agent any
+
+    agent {
+        label 'github-codespace'
+    }
+
     environment {
         REPO = 'https://github.com/Makushchenko/kbot.git'
         BRANCH = 'main'
