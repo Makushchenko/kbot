@@ -70,13 +70,13 @@ pipeline {
             }
         }
         stage("push") {
-          steps {
-            script {
-              docker.withRegistry('https://ghcr.io', 'ghcr-creds') {
-                sh 'make push'
-              }
+            steps {
+                script {
+                    docker.withRegistry('https://ghcr.io', 'ghcr-creds') {
+                        sh 'make push'
+                    }
+                }
             }
-          }
         }
     }
 }
