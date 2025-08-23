@@ -23,7 +23,7 @@ pipeline {
         )
         booleanParam(
             name: 'SKIP_LINT',
-            defaultValue: false,
+            defaultValue: true,
             description: 'Skip running linter'
         )
     }    
@@ -36,11 +36,23 @@ pipeline {
             }
         }
         stage('test') {
+            when {
+                expression { return !params.SKIP_TESTS }
+            }            
             steps {
                 echo 'TEST EXECUTION STARTED'
                 sh 'make test'
             }
         }
+        stage('lint') {
+            when {
+                expression { return !params.SKIP_LINT }
+            }            
+            steps {
+                echo 'LINT EXECUTION STARTED'
+                sh 'make lint'
+            }
+        }        
         stage('build') {
             steps {
                 echo 'ARTIFACT BUILD EXECUTION STARTED'
