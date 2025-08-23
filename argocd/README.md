@@ -122,8 +122,31 @@ kubectl logs kbot-78777496b6-z4z9r -n kbot -f
 
 ---
 
+
+## 10) Visualize Pipelines with Blue Ocean
+
+Blue Ocean gives a modern UI to explore, debug, and manage **Declarative/Scripted Pipelines**.
+
+### Install
+
+1. Jenkins → **Manage Jenkins → Plugins → Available**.
+2. Search **Blue Ocean** (aggregator) and install; dependencies will be pulled automatically.
+3. **Restart Jenkins** when prompted.
+
+> If Blue Ocean is unavailable in your environment or you prefer a lighter option, install **Pipeline: Stage View** or **Pipeline Graph View** as an alternative visualizer.
+
+### Open & Use
+
+* From the left sidebar choose **Open Blue Ocean** (or navigate to `/blue`).
+* Pick a pipeline run to see a **graph of stages**, **parallel branches**, and **per‑step logs**.
+* Click a stage/node to view logs, environment, and timing; download artifacts if archived.
+* Use the **Branches** tab to view multibranch pipelines (branches & PRs) and their last status.
+
+---
+
 ### Troubleshooting tips
 
 * If ArgoCD doesn’t pick up changes fast enough, click **Refresh** in the UI or run `argocd app refresh kbot --hard`.
 * If the Application shows type **Directory** instead of **Helm**, ensure your `path` contains a `Chart.yaml`.
 * Secrets won’t update running Pods automatically; trigger a rollout if you rotate tokens.
+* Blue Ocean complements, not replaces, classic views; jump back via **Open in Classic** when needed.
