@@ -51,10 +51,10 @@ jobs:
       with:
         cmd: |
           yq -i '.image.tag=strenv(VERSION)' helm/values.yaml
-          yq -i '.version = strenv(CHART_VERSION)' helm/Chart.yaml
-          yq -i '.appVersion = strenv(CHART_VERSION)' helm/Chart.yaml          
+          yq -i '.version=strenv(CHART_VERSION)' helm/Chart.yaml
+          yq -i '.appVersion=strenv(CHART_VERSION)' helm/Chart.yaml          
     - run: |
         git config user.name github-actions
         git config user.email github-actions@github.com
-        git commit -am "chore(chart): version=${CHART_VERSION} appVersion=${VERSION} image.tag=${VERSION}" || echo "No changes"
+        git commit -am "update version=${CHART_VERSION} appVersion=${CHART_VERSION} image.tag=${VERSION}" || echo "No changes"
         git push origin ${{ github.ref_name }}
