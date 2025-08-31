@@ -4,6 +4,7 @@ run-name: ${{ github.triggering_actor }} is triggered "${{ github.workflow }}" w
 on:
   push:
     branches:
+      - main
       - develop
 
 env:
