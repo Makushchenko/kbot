@@ -34,8 +34,9 @@ kubectl describe secret ghcr-creds -n kbot
 # --- Install Flux CLI
 curl -s https://fluxcd.io/install.sh | sudo FLUX_VERSION=2.0.0 bash
 
+
 ######################
-# .2
+# .2 Create file into repo kbot-flux: clusters/kbot/kbot-gr.yaml
 ######################
 flux create source git kbot \
     --url=https://github.com/Makushchenko/kbot \
@@ -54,8 +55,9 @@ spec:
     branch: main
   url: https://github.com/Makushchenko/kbot
 
+
 ######################
-# .3
+# .3 Create file into repo kbot-flux: clusters/kbot/kbot-hr.yaml
 # reconcileStrategy: Revision <— react to Git commits (repo revision), not only chart version
 ######################
 flux create helmrelease kbot \
@@ -105,6 +107,7 @@ kubectl get pods -n flux-system -l app=source-controller
 kubectl logs source-controller-78b674c466-zkch7 -n flux-system
 kubectl describe pod source-controller-78b674c466-zkch7 -n flux-system
 kubectl -n flux-system get kustomization -o wide
+
 
 ######################
 # .5 Validate deployment
