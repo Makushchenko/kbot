@@ -6,20 +6,20 @@
 #
 # Quick use:
 #   0) Rename existing pre-commit sample script:
-#      mv .git/hooks/pre-commit.sample .git/hooks/pre-commit
+#        mv .git/hooks/pre-commit.sample .git/hooks/pre-commit
 #   1) Copy to .git/hooks/pre-commit (LF endings). Make executable on *nix:
 #        chmod +x .git/hooks/pre-commit
 #   2) Toggle behavior:
 #        This hook auto-enables itself (sets: git config --local hooks.gitleaks true).
-#        Check status:  git config --bool hooks.gitleaks
+#        Check status:
+#          git config --bool hooks.gitleaks
 #        Temporary bypass for one commit:  git commit --no-verify
 #        Permanent disable: comment/remove the force-enable lines in main()
 #        (or guard them with an env flag), then optionally set hooks.gitleaks false.
 #   3) Commit as usual. The hook auto-installs gitleaks into .git/hooks/bin/
 #      from the latest GitHub release (tar.gz on Linux/macOS, zip on Windows).
 #	4) Command to test (manual, same mode as the hook; run from repo root):
-#	   .git/hooks/bin/gitleaks git --pre-commit --staged --redact --config .gitleaks.toml
-#	   (optionally add: --exit-code 1  to force non-zero exit when leaks are found)
+#	     .git/hooks/bin/gitleaks git --pre-commit --staged --redact --config .gitleaks.toml
 #	5) Config note (.gitleaks.toml in repo root):
 #	   To keep all built-in rules AND add custom ones, include:
 #	     [extend]
