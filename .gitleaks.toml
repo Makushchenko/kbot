@@ -1,0 +1,13 @@
+# .gitleaks.toml
+title = "custom gitleaks config"
+
+[extend]
+useDefault = true                      # keep all built-in rules
+# disabledRules = ["generic-api-key"]  # optional: turn off noisy defaults
+
+[[rules]]
+id          = "telegram-bot-token"
+description = "Telegram Bot API token"
+# Format: <bot_id>:<secret> — secret typically starts with 'AA' and is base64-ish.
+# Includes ASCII hyphen '-' and also en-dash '–' just in case a smart editor changed it.
+regex       = '''(^|[^A-Za-z0-9_])([0-9]{6,12}:[A-Za-z0-9_\-–]{30,64})([^A-Za-z0-9_]|$)'''
