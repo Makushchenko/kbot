@@ -5,7 +5,9 @@
 # Gitleaks pre-commit hook (Linux/macOS/Windows) with silent auto-install
 #
 # Quick use:
-#   1) Save/Copy as/to .git/hooks/pre-commit (LF endings). Make executable on *nix:
+#   0) Rename existing pre-commit sample script:
+#      mv .git/hooks/pre-commit.sample .git/hooks/pre-commit
+#   1) Copy to .git/hooks/pre-commit (LF endings). Make executable on *nix:
 #        chmod +x .git/hooks/pre-commit
 #   2) Toggle behavior:
 #        This hook auto-enables itself (sets: git config --local hooks.gitleaks true).
