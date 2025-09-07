@@ -30,10 +30,65 @@ module "tls_private_key" {
 module "flux_bootstrap" {
   source = "github.com/Makushchenko/tf-fluxcd-flux-bootstrap"
 
-  kube_config_host    = module.gke_cluster.config_host
-  kube_config_token   = module.gke_cluster.config_token
-  kube_ca_certificate = module.gke_cluster.ca_certificate
-  github_repository   = "${var.GITHUB_OWNER}/${var.FLUX_GITHUB_REPO}"
-  github_token        = var.GITHUB_TOKEN
-  private_key         = module.tls_private_key.private_key_pem
+  kube_config_host       = module.gke_cluster.config_host
+  kube_config_token      = module.gke_cluster.config_token
+  kube_ca_certificate    = module.gke_cluster.ca_certificate
+  github_repository      = "${var.GITHUB_OWNER}/${var.FLUX_GITHUB_REPO}"
+  github_token           = var.GITHUB_TOKEN
+  kustomization_override = file("${path.module}/flux-kbot-bootstrap/kustomization.yaml")
+  private_key            = module.tls_private_key.private_key_pem
+}
+
+# --- TO DO: migrate to module ---
+resource "github_repository_file" "seed_kbot_bootstrap" {
+  for_each            = local.seed_kbot_bootstrap
+  repository          = var.FLUX_GITHUB_REPO
+  branch              = data.github_repository.flux_gitops.default_branch
+  file                = each.key
+  content             = each.value
+  commit_message      = "Seed ${each.key} via Terraform"
+  commit_author       = var.GITHUB_OWNER
+  commit_email        = var.GITHUB_EMAIL
+  overwrite_on_create = true
+
+  depends_on = [module.github_repository, module.flux_bootstrap]
+}
+
+module "gke-workload-identity" {
+  source = "terraform-google-modules/kubernetes-engine/google//modules/workload-identity"
+
+  use_existing_k8s_sa = true
+  name                = "kustomize-controller"
+  namespace           = "flux-system"
+  project_id          = var.GOOGLE_PROJECT
+  cluster_name        = var.GKE_CLUSTER_NAME
+  location            = var.GOOGLE_REGION
+  annotate_k8s_sa     = true
+  roles               = ["roles/cloudkms.cryptoKeyEncrypterDecrypter"]
+}
+
+module "kms" {
+  source  = "terraform-google-modules/kms/google"
+  version = "~> 4.0"
+
+  project_id      = var.GOOGLE_PROJECT
+  location        = "global"
+  keyring         = "sops-flux"
+  keys            = ["sops-key-flux"]
+  prevent_destroy = false
+}
+
+# --- TO DO: migrate to module ---
+resource "github_repository_file" "seed_flux_bootstrap" {
+  for_each            = local.seed_flux_bootstrap
+  repository          = var.FLUX_GITHUB_REPO
+  branch              = data.github_repository.flux_gitops.default_branch
+  file                = each.key
+  content             = each.value
+  commit_message      = "Seed ${each.key} via Terraform"
+  commit_author       = var.GITHUB_OWNER
+  commit_email        = var.GITHUB_EMAIL
+  overwrite_on_create = true
+
+  depends_on = [module.gke-workload-identity]
 }

@@ -58,7 +58,14 @@ variable "GITHUB_TOKEN" {
   sensitive   = true
 }
 
+variable "GITHUB_EMAIL" {
+  type        = string
+  default     = ""
+  description = "GitHub email set with: export TF_VAR_GITHUB_EMAIL="
+  sensitive   = true
+}
+
 variable "FLUX_GITHUB_REPO" {
   type    = string
-  default = "kbot-flux"
+  default = "flux-gitops"
 }
