@@ -73,8 +73,8 @@ module "kms" {
 
   project_id      = var.GOOGLE_PROJECT
   location        = "global"
-  keyring         = "sops-flux"
-  keys            = ["sops-key-flux"]
+  keyring         = "sops-flux-${local.application}"
+  keys            = ["sops-key-flux-${local.application}"]
   prevent_destroy = false
 }
 

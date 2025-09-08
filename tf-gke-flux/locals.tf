@@ -1,13 +1,13 @@
 locals {
   environment = "demo"
+  application = "kbot"
   owner       = "makushchenko"
 
   # --- kbot
   seed_kbot_bootstrap = {
-    "clusters/kbot/kbot-ns.yaml"     = file("${path.module}/flux-kbot-bootstrap/kbot-ns.yaml")
-    "clusters/kbot/kbot-gr.yaml"     = file("${path.module}/flux-kbot-bootstrap/kbot-gr.yaml")
-    "clusters/kbot/kbot-hr.yaml"     = file("${path.module}/flux-kbot-bootstrap/kbot-hr.yaml")
-    "clusters/kbot/secrets-enc.yaml" = file("${path.module}/flux-kbot-bootstrap/secrets-enc.yaml")
+    "clusters/kbot/kbot-ns.yaml" = file("${path.module}/flux-kbot-bootstrap/kbot-ns.yaml")
+    "clusters/kbot/kbot-gr.yaml" = file("${path.module}/flux-kbot-bootstrap/kbot-gr.yaml")
+    "clusters/kbot/kbot-hr.yaml" = file("${path.module}/flux-kbot-bootstrap/kbot-hr.yaml")
   }
 
   # --- flux
