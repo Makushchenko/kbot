@@ -1,11 +1,21 @@
 ######################
 # Prerequisites 
 ######################
+$PROJECT_ID=
 # --- Get credentials for GKE cluster
-gcloud container clusters get-credentials kbot-cluster --zone europe-central2-a --project <project_id>
+gcloud container clusters get-credentials kbot-cluster --zone europe-central2-a --project $PROJECT_ID
 
 # --- Install Flux CLI
 curl -s https://fluxcd.io/install.sh | sudo FLUX_VERSION=2.0.0 bash
+
+read -s TELE_TOKEN && export TELE_TOKEN
+read -s GH_PAT && export GH_PAT
+export TF_VAR_GITHUB_TOKEN=
+export TF_VAR_GITHUB_EMAIL=
+export TF_VAR_GITHUB_OWNER=
+
+# --- After first apply of flux_bootstrap manually add sa-patch.yaml and sops-patch.yaml into clusters/flux-system 
+
 
 
 ######################
@@ -78,8 +88,8 @@ cat ./flux-kbot-bootstrap/secrets-enc.yaml
 ######################
 # Create the secrets in GCP Secret Manager
 ######################
-PROJECT_ID=<project_id>
-SA_EMAIL=kustomize-controller@<project_id>.iam.gserviceaccount.com
+PROJECT_ID=engaged-card-466414-h6
+SA_EMAIL=kustomize-controller@engaged-card-466414-h6.iam.gserviceaccount.com
 
 # --- Enable service
 gcloud services enable secretmanager.googleapis.com --project "$PROJECT_ID"
@@ -110,13 +120,13 @@ gcloud secrets add-iam-policy-binding GH_PAT \
 # --- Get GCP_KMS_KEYRING_NAME
 gcloud kms keys list \
   --location=global \
-  --keyring=sops-flux-kbot \
+  --keyring=sops-flux-kbot-kr \
   --format='value(name)'
 
 # --- Get GCP_SA_KEY
 gcloud iam service-accounts keys create key.json \
-  --iam-account kustomize-controller@<project_id>.iam.gserviceaccount.com \
-  --project <project_id>
+  --iam-account kustomize-controller@$PROJECT_ID.iam.gserviceaccount.com \
+  --project $PROJECT_ID
 
 
 ######################
@@ -143,10 +153,10 @@ k get sa -n flux-system kustomize-controller -o yaml
 
 # --- kbot deployment
 kubectl get pods -n kbot
-k describe po kbot-86994d5c-lpz45j -n kbot 
+k describe po kbot-7b7649984b-v8h4m -n kbot 
 k get deploy -n kbot
 k rollout restart deploy kbot -n kbot
-k logs kbot-86994d5c-lpz45 -n kbot -f
+k logs kbot-7b7649984b-v8h4m -n kbot -f
 
 # --- Secrets
 k get secrets -n kbot

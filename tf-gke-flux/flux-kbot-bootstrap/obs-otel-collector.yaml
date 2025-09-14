@@ -1,0 +1,49 @@
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: otel-gateway
+  namespace: observability
+spec:
+  mode: deployment
+  replicas: 2
+  config: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+          http:
+    processors:
+      memory_limiter:
+        check_interval: 2s
+        limit_percentage: 80
+        spike_limit_percentage: 25
+      batch:
+        timeout: 5s
+        send_batch_size: 8192
+    exporters:
+      # Expose Collector's own metrics for Prometheus scraping
+      prometheus:
+        endpoint: "0.0.0.0:8889"
+      # Send logs to Loki using the native OTLP/HTTP endpoint
+      otlphttp/logs:
+        endpoint: "http://loki.observability.svc.cluster.local:3100/otlp"
+      # Send traces to Tempo via OTLP (HTTP)
+      otlphttp/traces:
+        endpoint: "http://tempo.observability.svc.cluster.local:4318"
+    service:
+      telemetry:
+        metrics:
+          address: "0.0.0.0:8888"
+      pipelines:
+        logs:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [otlphttp/logs]
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [otlphttp/traces]
+        metrics:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [prometheus]
