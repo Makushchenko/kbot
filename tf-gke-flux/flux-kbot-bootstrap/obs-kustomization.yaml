@@ -1,14 +1,14 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: flux-system
+  name: observability
   namespace: flux-system
 spec:
-  decryption:
-    provider: sops
-  interval: 10m0s
-  path: ./clusters/flux-system
-  prune: true
+  interval: 1m
   sourceRef:
     kind: GitRepository
     name: flux-system
+  path: ./clusters/observability
+  prune: true
+  wait: true
+  timeout: 5m

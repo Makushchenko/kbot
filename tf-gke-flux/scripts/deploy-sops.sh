@@ -145,10 +145,10 @@ kubectl get pods source-controller-7f4885bfbf-j89ck -n flux-system -owide
 kubectl describe pod source-controller-7f4885bfbf-j89ck -n flux-system
 kubectl get pods -n flux-system -o wide
 kubectl get pods -n flux-system -l app=source-controller
-kubectl logs source-controller-78b674c466-zkch7 -n flux-system
-kubectl describe pod source-controller-78b674c466-zkch7 -n flux-system
+kubectl logs source-controller-6ff87cb475-28mxn -n flux-system
+kubectl describe pod source-controller-6ff87cb475-28mxn -n flux-system
 kubectl -n flux-system get kustomization -o wide
-k logs -n flux-system kustomize-controller-57c7ff5596-2rhlf -f --tail 10
+k logs -n flux-system kustomize-controller-57c7ff5596-sbnfr -f --tail 10
 k get sa -n flux-system kustomize-controller -o yaml
 
 # --- kbot deployment

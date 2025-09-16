@@ -10,15 +10,31 @@ data:
     apiVersion: 1
     datasources:
     - name: Prometheus
+      uid: prom
       type: prometheus
       access: proxy
       url: http://kube-prometheus-stack-prometheus.observability.svc.cluster.local:9090
       isDefault: true
+      jsonData:
+        httpMethod: POST
+        exemplarTraceIdDestinations:
+          - name: trace_id
+            datasourceUid: tempo
     - name: Loki
+      uid: loki
       type: loki
       access: proxy
       url: http://loki.observability.svc.cluster.local:3100
     - name: Tempo
+      uid: tempo
       type: tempo
       access: proxy
       url: http://tempo.observability.svc.cluster.local:3200
+      jsonData:
+        tracesToLogs:
+          datasourceUid: loki
+          filterByTraceID: true
+          filterBySpanID: true
+          tags: [ "namespace", "pod", "container" ]
+        lokiSearch:
+          datasourceUid: loki

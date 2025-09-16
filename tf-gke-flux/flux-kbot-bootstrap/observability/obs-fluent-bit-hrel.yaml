@@ -1,0 +1,101 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: fluent-bit
+  namespace: observability
+spec:
+  interval: 10m
+  chart:
+    spec:
+      chart: fluent-bit
+      version: "0.53.0"
+      sourceRef:
+        kind: HelmRepository
+        name: fluent
+        namespace: flux-system
+  values:
+    serviceAccount:
+      automountServiceAccountToken: true
+    securityContext:
+      runAsUser: 0 
+      runAsGroup: 0
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities:
+        drop: ["ALL"]
+    resources:
+      requests: { cpu: 100m, memory: 200Mi }
+      limits:   { memory: 400Mi }      
+    extraVolumes:
+      - name: runlog
+        hostPath:
+          path: /run/log/journal
+      - name: varlogjournal
+        hostPath:
+          path: /var/log/journal
+      - name: buffers
+        emptyDir:
+          sizeLimit: 2Gi
+    extraVolumeMounts:
+      - name: runlog
+        mountPath: /run/log/journal
+        readOnly: true
+      - name: varlogjournal
+        mountPath: /var/log/journal
+        readOnly: true
+      - name: buffers
+        mountPath: /buffers
+        readOnly: false
+    config:
+      service: |
+        [SERVICE]
+          Parsers_File  parsers.conf
+          HTTP_Server   On
+          HTTP_Listen   0.0.0.0
+          HTTP_Port     2020
+          storage.path  /buffers
+          storage.backlog.mem_limit 50M
+
+      inputs: |
+        [INPUT]
+          Name              systemd
+          Tag               node.*
+          DB                /var/log/flb-systemd.db
+          DB.Sync           normal
+          Strip_Underscores On
+          Systemd_Filter    _SYSTEMD_UNIT=kubelet.service
+          Systemd_Filter    _SYSTEMD_UNIT=containerd.service
+          storage.type      filesystem
+
+        [INPUT]
+          Name              tail
+          Path              /var/log/containers/*.log
+          Exclude_Path      /var/log/containers/fluent-bit-*.log
+          Parser            cri
+          Tag               kube.*
+          Mem_Buf_Limit     5MB
+          Skip_Long_Lines   On
+          storage.type      filesystem
+
+      filters: |
+        [FILTER]
+          Name                kubernetes
+          Match               kube.*
+          Merge_Log           On
+          Keep_Log            On
+          Kube_Tag_Prefix     kube.var.log.containers.
+
+      outputs: |
+        [OUTPUT]
+          Name          opentelemetry
+          Match         *
+          Host          otel-gateway.observability.svc.cluster.local
+          Port          4318
+          logs_uri      /v1/logs
+          logs_body_key $log
+          compress      gzip
+          tls           Off
+          tls.verify    Off
+          # retry & buffering
+          Retry_Limit   False
+          net.keepalive On

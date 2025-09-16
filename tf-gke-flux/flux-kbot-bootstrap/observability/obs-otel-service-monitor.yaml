@@ -1,0 +1,14 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: otel-gateway
+  namespace: observability
+  labels:
+    release: kube-prometheus-stack   # <-- required by the default Prometheus selector
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: otel-gateway
+  endpoints:
+    - port: telemetry
+    - port: prom-exporter            # remove if using core collector

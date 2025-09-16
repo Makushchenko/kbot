@@ -73,22 +73,37 @@ module "kms" {
 
   project_id      = var.GOOGLE_PROJECT
   location        = "global"
-  keyring         = "sops-flux-${local.application}"
-  keys            = ["sops-key-flux-${local.application}"]
+  keyring         = "sops-flux-${local.application}-keyring"
+  keys            = ["sops-key-flux-${local.application}-keys"]
   prevent_destroy = false
 }
 
-# --- TO DO: migrate to module ---
-resource "github_repository_file" "seed_flux_bootstrap" {
-  for_each            = local.seed_flux_bootstrap
-  repository          = var.FLUX_GITHUB_REPO
-  branch              = data.github_repository.flux_gitops.default_branch
-  file                = each.key
-  content             = each.value
-  commit_message      = "Seed ${each.key} via Terraform"
-  commit_author       = var.GITHUB_OWNER
-  commit_email        = var.GITHUB_EMAIL
-  overwrite_on_create = true
+# # --- TO DO: migrate to module ---
+# resource "github_repository_file" "seed_flux_bootstrap" {
+#   for_each            = local.seed_flux_bootstrap
+#   repository          = var.FLUX_GITHUB_REPO
+#   branch              = data.github_repository.flux_gitops.default_branch
+#   file                = each.key
+#   content             = each.value
+#   commit_message      = "Seed ${each.key} via Terraform"
+#   commit_author       = var.GITHUB_OWNER
+#   commit_email        = var.GITHUB_EMAIL
+#   overwrite_on_create = true
 
-  depends_on = [module.gke-workload-identity]
-}
+#   depends_on = [module.gke-workload-identity]
+# }
+
+# # --- TO DO: migrate to module ---
+# resource "github_repository_file" "seed_observability_bootstrap" {
+#   for_each            = local.seed_observability_bootstrap
+#   repository          = var.FLUX_GITHUB_REPO
+#   branch              = data.github_repository.flux_gitops.default_branch
+#   file                = each.key
+#   content             = each.value
+#   commit_message      = "Seed ${each.key} via Terraform"
+#   commit_author       = var.GITHUB_OWNER
+#   commit_email        = var.GITHUB_EMAIL
+#   overwrite_on_create = true
+
+#   depends_on = [module.gke-workload-identity]
+# }
