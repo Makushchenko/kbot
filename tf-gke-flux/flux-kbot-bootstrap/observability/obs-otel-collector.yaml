@@ -40,16 +40,18 @@ spec:
               - delete_key(attributes, "kubernetes")
 
     exporters:
-      prometheus:            # pipeline metrics exposed for Prometheus to scrape
+      prometheus:
         endpoint: "0.0.0.0:8889"
       otlphttp/logs:
         endpoint: "http://loki.observability.svc.cluster.local:3100/otlp"
+        tls:
+          insecure: true
       otlphttp/traces:
         endpoint: "http://tempo.observability.svc.cluster.local:4318"
 
     service:
       telemetry:
-        metrics:             # Collector's own internal metrics (new schema)
+        metrics:
           readers:
             - pull:
                 exporter:

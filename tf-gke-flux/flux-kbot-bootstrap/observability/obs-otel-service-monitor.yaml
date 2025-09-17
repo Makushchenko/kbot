@@ -8,7 +8,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/instance: otel-gateway
+      app.kubernetes.io/instance: observability.otel-gateway
   endpoints:
     - port: telemetry
-    - port: prom-exporter            # remove if using core collector
+    - port: prom-exporter

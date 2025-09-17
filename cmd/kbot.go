@@ -15,9 +15,13 @@ import (
 	"github.com/hirosassa/zerodriver"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/propagation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
+	"go.opentelemetry.io/otel/trace"
 	telebot "gopkg.in/telebot.v4"
 )
 
@@ -26,6 +30,9 @@ var (
 	TeleToken = os.Getenv("TELE_TOKEN")
 	// MetricsHost exporter host:port
 	MetricsHost = os.Getenv("METRICS_HOST")
+
+	// tracer is the OpenTelemetry tracer.
+	tracer trace.Tracer
 )
 
 // Initialize OpenTelemetry
@@ -75,6 +82,43 @@ func initMetrics(ctx context.Context) {
 	log.Printf("OpenTelemetry metrics initialized, sending to: %s", MetricsHost)
 }
 
+// Initialize OpenTelemetry tracing
+func initTracing(ctx context.Context) {
+	if MetricsHost == "" {
+		log.Printf("WARNING: METRICS_HOST environment variable is not set. Tracing will not be exported.")
+		return
+	}
+
+	exporter, err := otlptracegrpc.New(
+		ctx,
+		otlptracegrpc.WithEndpoint(MetricsHost),
+		otlptracegrpc.WithInsecure(),
+	)
+	if err != nil {
+		log.Printf("Failed to create trace exporter: %v", err)
+		return
+	}
+
+	// Reuse the same resource you're already creating for metrics
+	resource := resource.NewWithAttributes(
+		semconv.SchemaURL,
+		semconv.ServiceNameKey.String(fmt.Sprintf("kbot_%s", appVersion)),
+	)
+
+	tracerProvider := sdktrace.NewTracerProvider(
+		sdktrace.WithResource(resource),
+		sdktrace.WithBatcher(exporter),
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+	)
+
+	// Set global propagator to tracecontext (W3C)
+	otel.SetTextMapPropagator(propagation.TraceContext{})
+	otel.SetTracerProvider(tracerProvider)
+
+	tracer = otel.GetTracerProvider().Tracer("kbot")
+	log.Printf("OpenTelemetry tracing initialized, sending to: %s", MetricsHost)
+}
+
 func pmetrics(ctx context.Context, payload string) {
 	// Get the global MeterProvider and create a new Meter with the name "kbot_counter"
 	meter := otel.GetMeterProvider().Meter("kbot_counter")
@@ -86,6 +130,28 @@ func pmetrics(ctx context.Context, payload string) {
 	// Add a value of 1 to the Int64Counter
 	// та збільшимо його на одиницю
 	counter.Add(ctx, 1)
+
+	// Get current span from context and add attributes if available
+	span := trace.SpanFromContext(ctx)
+	if span.IsRecording() {
+		span.SetAttributes(semconv.ServiceNameKey.String(fmt.Sprintf("kbot_%s", appVersion)))
+	}
+}
+
+// logWithTrace adds trace information to the logs
+func logWithTrace(ctx context.Context, logger *zerodriver.Logger, message string, payload string) {
+	span := trace.SpanFromContext(ctx)
+
+	if span.SpanContext().IsValid() {
+		// Add trace ID to log
+		traceID := span.SpanContext().TraceID().String()
+		logger.Info().
+			Str("Payload", payload).
+			Str("trace_id", traceID).
+			Msg(message)
+	} else {
+		logger.Info().Str("Payload", payload).Msg(message)
+	}
 }
 
 // kbotCmd represents the kbot command
@@ -119,15 +185,29 @@ to quickly create a Cobra application.`,
 		}
 
 		kbot.Handle(telebot.OnText, func(m telebot.Context) error {
-			log.Print(m.Message().Payload, m.Text())
-			logger.Info().Str("Payload", m.Text()).Msg(m.Message().Payload)
+			// Create a new trace for each incoming message
+			ctx, span := tracer.Start(context.Background(), "kbot_handle_message")
+			defer span.End()
+
+			// Add message details as span attributes
+			span.SetAttributes(
+				semconv.MessagingSystemKey.String("telegram"),
+				semconv.MessagingOperationKey.String("process"),
+			)
 
 			payload := m.Message().Payload
-			pmetrics(context.Background(), payload)
+
+			// Use the trace context for metrics
+			pmetrics(ctx, payload)
+
+			// Use the trace context for logging
+			logWithTrace(ctx, logger, m.Text(), payload)
 
 			switch payload {
 			case "hello":
+				_, childSpan := tracer.Start(ctx, "send_hello_response")
 				err = m.Send(fmt.Sprintf("Hello I'm Kbot %s!", appVersion))
+				childSpan.End()
 			}
 
 			return err
@@ -140,6 +220,7 @@ to quickly create a Cobra application.`,
 func init() {
 	ctx := context.Background()
 	initMetrics(ctx)
+	initTracing(ctx) // Add this line
 	rootCmd.AddCommand(kbotCmd)
 
 	// Here you will define your flags and configuration settings.

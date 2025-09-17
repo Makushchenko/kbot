@@ -89,11 +89,13 @@ spec:
         [OUTPUT]
           Name                 opentelemetry
           Match                *
-          Host                 otel-gateway-collector.observability.svc.cluster.local
+          Host                 otel-gateway.observability.svc.cluster.local
           Port                 4318
-          metrics_uri          /v1/metrics
           logs_uri             /v1/logs
-          traces_uri           /v1/traces
+          logs_body_key        $log
+          # metrics_uri          /v1/metrics
+          # logs_uri             /v1/logs
+          # traces_uri           /v1/traces
           Log_response_payload True
           tls                  off
           tls.verify           off
@@ -101,7 +103,3 @@ spec:
           # add user-defined labels
           add_label            app fluent-bit
           add_label            color blue
-
-        [OUTPUT]
-          Name  stdout
-          Match kube.*

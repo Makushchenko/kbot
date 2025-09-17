@@ -65,7 +65,7 @@ k get all -n observability
 
 # 6 ---
 # The Collector CR (spec.config: | … YAML block)
-kubectl apply -f  flux-kbot-bootstrap/observability/obs-otel-collector.yaml
+kubectl apply -f flux-kbot-bootstrap/observability/obs-otel-collector.yaml
 k get all -n observability
 k describe pod/otel-gateway-collector-6b784d5d6f-pffkq -n $NS
 k logs otel-gateway-collector-7d76577497-m2ttt --tail=60 -n $NS
@@ -122,6 +122,7 @@ k get all -n observability
 
 # --- OpenTelemetry Collector (gateway)
 kubectl -n $NS logs deploy/otel-gateway-collector --tail=200 -f
+kubectl logs -n observability deploy/otel-gateway-collector | grep -i error | tail -20
 
 # --- OpenTelemetry Operator (manager)
 kubectl -n $NS logs deploy/opentelemetry-operator -c manager --tail=200 -f
@@ -129,6 +130,7 @@ kubectl -n $NS logs deploy/opentelemetry-operator -c manager --tail=200 -f
 # --- Fluent Bit (DaemonSet on all nodes)
 kubectl -n $NS logs ds/fluent-bit -c fluent-bit --tail=200 -f --prefix --max-log-requests=20
 kubectl -n $NS logs ds/fluent-bit -c fluent-bit --tail=200
+kubectl logs -n observability -l app.kubernetes.io/name=fluent-bit --tail=50
 # single pod (if needed)
 kubectl -n $NS logs $(kubectl -n $NS get pod -l app.kubernetes.io/name=fluent-bit -o name | head -n1) -c fluent-bit --tail=200 -f
 
@@ -151,12 +153,24 @@ kubectl -n $NS logs deploy/grafana -c grafana-sc-dashboard --tail=200 || true
 kubectl -n flux-system logs deploy/helm-controller -f | grep -Ei 'fluent-bit|loki|tempo|grafana|otel|prometheus'
 kubectl -n flux-system logs deploy/source-controller -f | grep -Ei 'grafana|opentelemetry|prometheus'
 
+# --- Check if the ServiceMonitor labels match the service
+kubectl get svc -n observability otel-gateway --show-labels
+kubectl get servicemonitor -n observability otel-gateway -o yaml
+
+# --- Check OpenTelemetry Collector Metrics Endpoint
+kubectl port-forward -n observability svc/otel-gateway 8889:8889
+# Check if metrics are being exposed
+curl localhost:8889/metrics | grep kbot
+
 # --- Quick status helpers
 kubectl -n $NS get pods -o wide
 kubectl -n $NS get events --sort-by=.lastTimestamp | tail -n 50
 
 
-# -- ERRORS
+
+####################################################################
+# ERROR TROUBLESHOOTING
+####################################################################
 kubectl -n $NS logs deploy/kube-prometheus-stack-operator --tail=200 -f
 kubectl -n $NS logs deploy/grafana -c grafana --tail=200 -f | grep error
 
