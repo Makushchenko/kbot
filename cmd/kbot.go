@@ -30,15 +30,24 @@ var (
 
 // Initialize OpenTelemetry
 func initMetrics(ctx context.Context) {
-
+	// Check if MetricsHost is set
+	if MetricsHost == "" {
+		log.Printf("WARNING: METRICS_HOST environment variable is not set. Metrics will not be exported.")
+		return // Exit the function early
+	}
 	// Create a new OTLP Metric gRPC exporter with the specified endpoint and options
 	// Описуємо exporter otlp grpc що посилається на змінну вказану в дужках MetricsHost.
-	exporter, _ := otlpmetricgrpc.New(
+	exporter, err := otlpmetricgrpc.New(
 		ctx,
 		// Це адреса на якій буде доступний Collector Metric. Також там буде вказано і порт:
 		otlpmetricgrpc.WithEndpoint(MetricsHost),
 		otlpmetricgrpc.WithInsecure(),
 	)
+
+	if err != nil {
+		log.Printf("Failed to create exporter: %v", err)
+		return
+	}
 
 	// Define the resource with attributes that are common to all metrics.
 	// labels/tags/resources that are common to all metrics.
@@ -63,6 +72,7 @@ func initMetrics(ctx context.Context) {
 
 	// Set the global MeterProvider to the newly created MeterProvider
 	otel.SetMeterProvider(mp)
+	log.Printf("OpenTelemetry metrics initialized, sending to: %s", MetricsHost)
 }
 
 func pmetrics(ctx context.Context, payload string) {
