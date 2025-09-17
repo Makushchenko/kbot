@@ -34,4 +34,4 @@ service:
   port: 80
 # Metrics config (for OTLP/gRPC -> 4317)
 metrics:
-  host: "otel-gateway.observability.svc.cluster.local:4317"
+  host: "otel-gateway-collector.observability.svc.cluster.local:4317"

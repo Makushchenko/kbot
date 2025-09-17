@@ -162,7 +162,7 @@ kubectl get pods -n kbot
 k describe po kbot-7b7649984b-v8h4m -n kbot 
 k get deploy -n kbot
 k rollout restart deploy kbot -n kbot
-k logs kbot-67b6ddb66f-7ktxv -n kbot -f
+k logs kbot-7bb49fcc66-kh8hm -n kbot -f
 
 # --- Secrets
 k get secrets -n kbot

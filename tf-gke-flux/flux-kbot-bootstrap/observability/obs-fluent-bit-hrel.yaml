@@ -89,7 +89,7 @@ spec:
         [OUTPUT]
           Name                 opentelemetry
           Match                *
-          Host                 otel-gateway.observability.svc.cluster.local
+          Host                 otel-gateway-collector.observability.svc.cluster.local
           Port                 4318
           metrics_uri          /v1/metrics
           logs_uri             /v1/logs
