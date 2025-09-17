@@ -14,8 +14,10 @@ import (
 
 	"github.com/hirosassa/zerodriver"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -120,21 +122,26 @@ func initTracing(ctx context.Context) {
 }
 
 func pmetrics(ctx context.Context, payload string) {
-	// Get the global MeterProvider and create a new Meter with the name "kbot_counter"
 	meter := otel.GetMeterProvider().Meter("kbot_counter")
+	counter, err := meter.Int64Counter(fmt.Sprintf("kbot_%s", payload))
+	if err != nil {
+		log.Printf("Failed to create counter: %v", err)
+		// Continue with degraded telemetry rather than failing
+	}
 
-	// Get or create an Int64Counter instrument with the name "kbot_<payload>"
-	// Використаємо це в окремому лічильнику під кожний сигнал світлофора
-	counter, _ := meter.Int64Counter(fmt.Sprintf("kbot_%s", payload))
-
-	// Add a value of 1 to the Int64Counter
-	// та збільшимо його на одиницю
-	counter.Add(ctx, 1)
-
-	// Get current span from context and add attributes if available
+	// Get current span from context
 	span := trace.SpanFromContext(ctx)
-	if span.IsRecording() {
-		span.SetAttributes(semconv.ServiceNameKey.String(fmt.Sprintf("kbot_%s", appVersion)))
+
+	// Create attributes with trace ID if span is valid
+	if span.SpanContext().IsValid() {
+		counter.Add(ctx, 1, metric.WithAttributes(
+			semconv.ServiceNameKey.String(fmt.Sprintf("kbot_%s", appVersion)),
+			// This is the key line that links metrics to traces
+			attribute.String("trace_id", span.SpanContext().TraceID().String()),
+		))
+	} else {
+		// Add a value without trace ID
+		counter.Add(ctx, 1)
 	}
 }
 
@@ -193,9 +200,18 @@ to quickly create a Cobra application.`,
 			span.SetAttributes(
 				semconv.MessagingSystemKey.String("telegram"),
 				semconv.MessagingOperationKey.String("process"),
+				semconv.MessagingMessageIDKey.String(fmt.Sprintf("%d", m.Message().ID)),
+				attribute.String("messaging.conversation.id", fmt.Sprintf("%d", m.Message().Chat.ID)),
+				attribute.String("user.id", fmt.Sprintf("%d", m.Message().Sender.ID)),
 			)
 
 			payload := m.Message().Payload
+
+			// Add an event for the received message
+			span.AddEvent("received_message", trace.WithAttributes(
+				attribute.String("payload", payload),
+				attribute.String("chat_id", fmt.Sprintf("%d", m.Message().Chat.ID)),
+			))
 
 			// Use the trace context for metrics
 			pmetrics(ctx, payload)

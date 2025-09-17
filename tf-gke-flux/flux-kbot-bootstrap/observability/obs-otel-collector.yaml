@@ -22,6 +22,18 @@ spec:
         timeout: 5s
         send_batch_size: 8192
 
+      transform/extract_nested_json:
+        log_statements:
+          - context: log
+            statements:
+              # Extract JSON from message using proper OTTL syntax
+              - set(attributes["parsed_json"], ParseJSON(attributes["message"])) where IsString(attributes["message"]) and attributes["message"] != ""
+              # Extract fields from parsed JSON
+              - set(attributes["severity"], attributes["parsed_json"]["severity"]) where IsDefined(attributes["parsed_json"]["severity"])
+              - set(attributes["payload"], attributes["parsed_json"]["Payload"]) where IsDefined(attributes["parsed_json"]["Payload"])
+              - set(attributes["trace_id"], attributes["parsed_json"]["trace_id"]) where IsDefined(attributes["parsed_json"]["trace_id"])
+              - set(attributes["cmd"], attributes["parsed_json"]["message"]) where IsDefined(attributes["parsed_json"]["message"])
+
       # Promote Fluent Bit fields -> OTel resource attributes (no K8s API needed)
       transform/flb_to_semconv:
         error_mode: ignore
@@ -61,7 +73,7 @@ spec:
       pipelines:
         logs:
           receivers: [otlp]
-          processors: [memory_limiter, transform/flb_to_semconv, batch]
+          processors: [memory_limiter, transform/flb_to_semconv, transform/extract_nested_json, batch]
           exporters: [otlphttp/logs]
         traces:
           receivers: [otlp]

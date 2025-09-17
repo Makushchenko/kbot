@@ -122,6 +122,7 @@ k get all -n observability
 
 # --- OpenTelemetry Collector (gateway)
 kubectl -n $NS logs deploy/otel-gateway-collector --tail=200 -f
+kubectl logs -n observability deploy/otel-gateway-collector
 kubectl logs -n observability deploy/otel-gateway-collector | grep -i error | tail -20
 
 # --- OpenTelemetry Operator (manager)
