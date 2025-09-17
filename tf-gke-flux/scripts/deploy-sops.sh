@@ -120,7 +120,7 @@ gcloud secrets add-iam-policy-binding GH_PAT \
 # --- Get GCP_KMS_KEYRING_NAME
 gcloud kms keys list \
   --location=global \
-  --keyring=sops-flux-kbot-kr \
+  --keyring=sops-flux-kbot-keyring \
   --format='value(name)'
 
 # --- Get GCP_SA_KEY
@@ -145,18 +145,24 @@ kubectl get pods source-controller-7f4885bfbf-j89ck -n flux-system -owide
 kubectl describe pod source-controller-7f4885bfbf-j89ck -n flux-system
 kubectl get pods -n flux-system -o wide
 kubectl get pods -n flux-system -l app=source-controller
-kubectl logs source-controller-6ff87cb475-28mxn -n flux-system
-kubectl describe pod source-controller-6ff87cb475-28mxn -n flux-system
+kubectl logs source-controller-6ff87cb475-v2brb -n flux-system
+kubectl describe pod source-controller-6ff87cb475-v2brb -n flux-system
 kubectl -n flux-system get kustomization -o wide
-k logs -n flux-system kustomize-controller-57c7ff5596-sbnfr -f --tail 10
+k logs -n flux-system kustomize-controller-57c7ff5596-6xvq9 -f --tail 10
 k get sa -n flux-system kustomize-controller -o yaml
+
+clusters/flux-system/sops-patch.yaml -> path: ./clusters
+flux reconcile kustomization flux-system --with-source
+flux get kustomizations -A
+flux get sources git -A
+
 
 # --- kbot deployment
 kubectl get pods -n kbot
 k describe po kbot-7b7649984b-v8h4m -n kbot 
 k get deploy -n kbot
 k rollout restart deploy kbot -n kbot
-k logs kbot-7b7649984b-v8h4m -n kbot -f
+k logs kbot-67b6ddb66f-7ktxv -n kbot -f
 
 # --- Secrets
 k get secrets -n kbot

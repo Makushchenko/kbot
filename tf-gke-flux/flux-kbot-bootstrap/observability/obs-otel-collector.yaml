@@ -22,6 +22,23 @@ spec:
         timeout: 5s
         send_batch_size: 8192
 
+      # Promote Fluent Bit fields -> OTel resource attributes (no K8s API needed)
+      transform/flb_to_semconv:
+        error_mode: ignore
+        log_statements:
+          - context: log
+            statements:
+              # Pods (from Fluent Bit kubernetes filter)
+              - set(resource.attributes["k8s.namespace.name"], attributes["kubernetes"]["namespace_name"]) where attributes["kubernetes"]["namespace_name"] != nil
+              - set(resource.attributes["k8s.pod.name"],      attributes["kubernetes"]["pod_name"])       where attributes["kubernetes"]["pod_name"] != nil
+              - set(resource.attributes["k8s.container.name"], attributes["kubernetes"]["container_name"]) where attributes["kubernetes"]["container_name"] != nil
+              - set(resource.attributes["service.name"], attributes["kubernetes"]["container_name"])       where attributes["kubernetes"]["container_name"] != nil
+              # Nodes (journald)
+              - set(resource.attributes["k8s.node.name"], attributes["_HOSTNAME"])  where attributes["_HOSTNAME"] != nil
+              - set(resource.attributes["service.name"],  attributes["_SYSTEMD_UNIT"]) where attributes["_SYSTEMD_UNIT"] != nil
+              # Optional tidy-up
+              - delete_key(attributes, "kubernetes")
+
     exporters:
       prometheus:            # pipeline metrics exposed for Prometheus to scrape
         endpoint: "0.0.0.0:8889"
@@ -42,7 +59,7 @@ spec:
       pipelines:
         logs:
           receivers: [otlp]
-          processors: [memory_limiter, batch]
+          processors: [memory_limiter, transform/flb_to_semconv, batch]
           exporters: [otlphttp/logs]
         traces:
           receivers: [otlp]

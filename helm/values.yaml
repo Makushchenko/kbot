@@ -32,3 +32,6 @@ service:
   type: ClusterIP
   # This sets the ports more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports
   port: 80
+# Metrics config (for OTLP/gRPC -> 4317)
+metrics:
+  host: "otel-gateway.observability.svc.cluster.local:4317"

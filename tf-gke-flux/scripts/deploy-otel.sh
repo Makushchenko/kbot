@@ -67,8 +67,8 @@ k get all -n observability
 # The Collector CR (spec.config: | … YAML block)
 kubectl apply -f  flux-kbot-bootstrap/observability/obs-otel-collector.yaml
 k get all -n observability
-k describe pod/otel-gateway-collector-5d8b9fd749-kfbnz -n $NS
-k logs otel-gateway-collector-5d8b9fd749-kfbnz --tail=60 -n $NS
+k describe pod/otel-gateway-collector-6b784d5d6f-pffkq -n $NS
+k logs otel-gateway-collector-7d76577497-m2ttt --tail=60 -n $NS
 # Service exposing OTLP/metrics endpoints
 kubectl apply -f  flux-kbot-bootstrap/observability/obs-otel-service.yaml
 k get all -n observability
@@ -128,11 +128,12 @@ kubectl -n $NS logs deploy/opentelemetry-operator -c manager --tail=200 -f
 
 # --- Fluent Bit (DaemonSet on all nodes)
 kubectl -n $NS logs ds/fluent-bit -c fluent-bit --tail=200 -f --prefix --max-log-requests=20
+kubectl -n $NS logs ds/fluent-bit -c fluent-bit --tail=200
 # single pod (if needed)
 kubectl -n $NS logs $(kubectl -n $NS get pod -l app.kubernetes.io/name=fluent-bit -o name | head -n1) -c fluent-bit --tail=200 -f
 
 # --- Loki
-kubectl -n $NS logs -l app.kubernetes.io/name=loki --tail=200 -f
+kubectl -n observability logs -l app.kubernetes.io/name=loki --tail=200 -f
 
 # --- Tempo
 kubectl -n $NS logs -l app.kubernetes.io/name=tempo --tail=200 -f
@@ -142,7 +143,7 @@ kubectl -n $NS logs sts/prometheus-kube-prometheus-stack-prometheus -c prometheu
 kubectl -n $NS logs deploy/kube-prometheus-stack-operator --tail=200 -f
 
 # --- Grafana
-kubectl -n $NS logs deploy/grafana -c grafana --tail=200 -f
+kubectl -n observability logs deploy/grafana -c grafana --tail=200 -f
 kubectl -n $NS logs deploy/grafana -c grafana-sc-datasources --tail=200
 kubectl -n $NS logs deploy/grafana -c grafana-sc-dashboard --tail=200 || true
 
@@ -338,3 +339,6 @@ gcloud compute target-http-proxies delete <NAME> --global --quiet
 gcloud compute forwarding-rules delete <NAME> --global --quiet
 gcloud compute health-checks delete <NAME> --global --quiet
 
+kubectl -n observability exec deploy/grafana -c grafana -- \
+  curl -s 'http://loki.observability.svc.cluster.local:3100/loki/api/v1/labels?since=10m' \
+  | jq -r '.data[]' | sort | egrep 'k8s_|service_name|host_name' 

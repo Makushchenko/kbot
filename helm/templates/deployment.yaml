@@ -36,6 +36,8 @@ spec:
             - mountPath: /dev/mem
               name: dev-mem
           env:
+            - name: METRICS_HOST
+              value: {{ .Values.metrics.host | quote }}
             - name: {{ .Values.secret.env }}
               valueFrom:
                 secretKeyRef:
