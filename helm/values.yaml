@@ -22,7 +22,7 @@ secret:
 image:
   registry: "ghcr.io"
   repository: "makushchenko/kbot"
-  tag: "v1.0.4-460eb1f"
+  tag: "v1.0.5-2b8c36d"
   os: linux
   arch: amd64
   pullPolicy: Always
