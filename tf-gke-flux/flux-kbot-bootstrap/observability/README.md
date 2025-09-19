@@ -14,6 +14,9 @@ Complete guide for deploying an observability stack using Flux, OpenTelemetry, P
 8. [Troubleshooting](#troubleshooting)
 9. [Grafana Dashboards](#grafana-dashboards)
 10. [PromQL Examples](#promql-examples)
+11. [Application Integration](#application-integration)
+12. [Notes](#notes)
+13. [Next Steps](#next-steps)
 
 ## Overview
 
@@ -330,7 +333,7 @@ kubectl -n flux-system logs deploy/helm-controller -f | grep -Ei 'fluent-bit|lok
 kubectl -n flux-system logs deploy/source-controller -f | grep -Ei 'grafana|opentelemetry|prometheus'
 ```
 
-## Grafana
+## Grafana Dashboards
 
 After deployment, access Grafana at `http://localhost:3001` with:
 - **Username**: `admin`
