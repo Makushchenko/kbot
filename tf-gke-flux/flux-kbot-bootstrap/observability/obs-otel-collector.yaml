@@ -28,11 +28,11 @@ spec:
             statements:
               # Extract JSON from message using proper OTTL syntax
               - set(attributes["parsed_json"], ParseJSON(attributes["message"])) where IsString(attributes["message"]) and attributes["message"] != ""
-              # Extract fields from parsed JSON
-              - set(attributes["severity"], attributes["parsed_json"]["severity"]) where IsDefined(attributes["parsed_json"]["severity"])
-              - set(attributes["payload"], attributes["parsed_json"]["Payload"]) where IsDefined(attributes["parsed_json"]["Payload"])
-              - set(attributes["trace_id"], attributes["parsed_json"]["trace_id"]) where IsDefined(attributes["parsed_json"]["trace_id"])
-              - set(attributes["cmd"], attributes["parsed_json"]["message"]) where IsDefined(attributes["parsed_json"]["message"])
+              # Extract fields using simpler condition checks
+              - set(attributes["severity"], attributes["parsed_json"]["severity"]) where IsMap(attributes["parsed_json"])
+              - set(attributes["payload"], attributes["parsed_json"]["Payload"]) where IsMap(attributes["parsed_json"])
+              - set(attributes["trace_id"], attributes["parsed_json"]["trace_id"]) where IsMap(attributes["parsed_json"])
+              - set(attributes["cmd"], attributes["parsed_json"]["message"]) where IsMap(attributes["parsed_json"])
 
       # Promote Fluent Bit fields -> OTel resource attributes (no K8s API needed)
       transform/flb_to_semconv:
@@ -54,6 +54,10 @@ spec:
     exporters:
       prometheus:
         endpoint: "0.0.0.0:8889"
+      # prometheusremotewrite:
+      #   endpoint: "http://kube-prometheus-stack-prometheus.observability.svc.cluster.local:9090/api/v1/write"
+      #   tls:
+      #     insecure: true
       otlphttp/logs:
         endpoint: "http://loki.observability.svc.cluster.local:3100/otlp"
         tls:
@@ -82,4 +86,5 @@ spec:
         metrics:
           receivers: [otlp]
           processors: [memory_limiter, batch]
-          exporters: [prometheus]
+          exporters: [prometheus]          
+          # exporters: [prometheus, prometheusremotewrite]

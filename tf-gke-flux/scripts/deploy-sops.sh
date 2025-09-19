@@ -17,74 +17,6 @@ export TF_VAR_GITHUB_OWNER=
 # --- After first apply of flux_bootstrap manually add sa-patch.yaml and sops-patch.yaml into clusters/flux-system 
 
 
-
-######################
-# (EXAMPLES)
-######################
-flux create source git kbot \
-    --url=https://github.com/Makushchenko/kbot \
-    --branch=main \
-    --namespace=kbot \
-    --export
----
-apiVersion: source.toolkit.fluxcd.io/v1
-kind: GitRepository
-metadata:
-  name: kbot
-  namespace: kbot
-spec:
-  interval: 1m0s
-  ref:
-    branch: main
-  url: https://github.com/Makushchenko/kbot
-
-# ---
-flux create kustomization flux-system \
-    --namespace=flux-system \
-    --path=./clusters \
-    --source=GitRepository/flux-system \
-    --interval=10m \
-    --prune=true \
-    --decryption-provider=sops \
-    --export > flux-kbot-bootstrap/sops-patch.yaml
-
-# --- SOPS
-wget https://github.com/getsops/sops/releases/download/v3.10.2/sops-v3.10.2.linux.amd64
-chmod +x sops-v3.10.2.linux.amd64
-mv sops-v3.10.2.linux.amd64 ./sops/sops
-# ---
-(
-  read -s TELE_TOKEN; echo
-  printf %s "$TELE_TOKEN" \
-  | kubectl -n kbot create secret generic kbot \
-      --type=Opaque \
-      --from-file=token=/dev/stdin \
-      --dry-run=client -o yaml
-  echo '---'
-  read -p "GHCR server [ghcr.io]: " SERVER; SERVER=${SERVER:-ghcr.io}
-  read -p "Email [ci@example.com]: " EMAIL; EMAIL=${EMAIL:-ci@example.com}
-  read -s -p "GHCR username: " GH_USER; echo
-  read -s -p "GHCR PAT: " GH_PAT; echo
-  AUTH_B64=$(printf "%s:%s" "$GH_USER" "$GH_PAT" | base64 | tr -d '\n')
-  printf '{"auths":{"%s":{"username":"%s","password":"%s","email":"%s","auth":"%s"}}}\n' \
-    "$SERVER" "$GH_USER" "$GH_PAT" "$EMAIL" "$AUTH_B64" \
-  | kubectl -n kbot create secret generic ghcr-creds \
-      --type=kubernetes.io/dockerconfigjson \
-      --from-file=.dockerconfigjson=/dev/stdin \
-      --dry-run=client -o yaml
-) > ./flux-kbot-bootstrap/secrets.yaml
-# ---
-./sops/sops -e --gcp-kms "$(
-  gcloud kms keys list \
-    --location=global \
-    --keyring=sops-flux-kbot \
-    --format='value(name)' | paste -sd, -
-)" --encrypted-regex '^(token|\.dockerconfigjson)$' ./flux-kbot-bootstrap/secrets.yaml > ./flux-kbot-bootstrap/secrets-enc.yaml
-# ---
-k delete secret ghcr-creds -n kbot && k delete secret kbot -n kbot
-cat ./flux-kbot-bootstrap/secrets-enc.yaml
-
-
 ######################
 # Create the secrets in GCP Secret Manager
 ######################
@@ -193,7 +125,7 @@ gcloud secrets delete TELE_TOKEN --project "$PROJECT_ID" --quiet
 gcloud secrets delete GH_PAT --project "$PROJECT_ID" --quiet
 
 # ---
-KEY=sops-flux-kbot; KR=sops-key-flux-kbot; LOC=global
+KEY=sops-key-flux-kbot-keys; KR=sops-flux-kbot-keyring; LOC=global
 for v in $(gcloud kms keys versions list --location=$LOC --keyring=$KR --key=$KEY --format='value(name.basename())'); do
   gcloud kms keys versions disable  "$v" --location=$LOC --keyring=$KR --key=$KEY
   gcloud kms keys versions destroy  "$v" --location=$LOC --keyring=$KR --key=$KEY
@@ -204,3 +136,70 @@ for v in $(gcloud kms keys versions list --location=$LOC --keyring=$KR --key=$KE
   gcloud kms keys versions disable  "$v" --location=$LOC --keyring=$KR --key=$KEY
   gcloud kms keys versions destroy  "$v" --location=$LOC --keyring=$KR --key=$KEY
 done
+
+
+######################
+# USEFUL COMMANDS
+######################
+flux create source git kbot \
+    --url=https://github.com/Makushchenko/kbot \
+    --branch=main \
+    --namespace=kbot \
+    --export
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: kbot
+  namespace: kbot
+spec:
+  interval: 1m0s
+  ref:
+    branch: main
+  url: https://github.com/Makushchenko/kbot
+
+# ---
+flux create kustomization flux-system \
+    --namespace=flux-system \
+    --path=./clusters \
+    --source=GitRepository/flux-system \
+    --interval=10m \
+    --prune=true \
+    --decryption-provider=sops \
+    --export > flux-kbot-bootstrap/sops-patch.yaml
+
+# --- SOPS
+wget https://github.com/getsops/sops/releases/download/v3.10.2/sops-v3.10.2.linux.amd64
+chmod +x sops-v3.10.2.linux.amd64
+mv sops-v3.10.2.linux.amd64 ./sops/sops
+# ---
+(
+  read -s TELE_TOKEN; echo
+  printf %s "$TELE_TOKEN" \
+  | kubectl -n kbot create secret generic kbot \
+      --type=Opaque \
+      --from-file=token=/dev/stdin \
+      --dry-run=client -o yaml
+  echo '---'
+  read -p "GHCR server [ghcr.io]: " SERVER; SERVER=${SERVER:-ghcr.io}
+  read -p "Email [ci@example.com]: " EMAIL; EMAIL=${EMAIL:-ci@example.com}
+  read -s -p "GHCR username: " GH_USER; echo
+  read -s -p "GHCR PAT: " GH_PAT; echo
+  AUTH_B64=$(printf "%s:%s" "$GH_USER" "$GH_PAT" | base64 | tr -d '\n')
+  printf '{"auths":{"%s":{"username":"%s","password":"%s","email":"%s","auth":"%s"}}}\n' \
+    "$SERVER" "$GH_USER" "$GH_PAT" "$EMAIL" "$AUTH_B64" \
+  | kubectl -n kbot create secret generic ghcr-creds \
+      --type=kubernetes.io/dockerconfigjson \
+      --from-file=.dockerconfigjson=/dev/stdin \
+      --dry-run=client -o yaml
+) > ./flux-kbot-bootstrap/secrets.yaml
+# ---
+./sops/sops -e --gcp-kms "$(
+  gcloud kms keys list \
+    --location=global \
+    --keyring=sops-flux-kbot \
+    --format='value(name)' | paste -sd, -
+)" --encrypted-regex '^(token|\.dockerconfigjson)$' ./flux-kbot-bootstrap/secrets.yaml > ./flux-kbot-bootstrap/secrets-enc.yaml
+# ---
+k delete secret ghcr-creds -n kbot && k delete secret kbot -n kbot
+cat ./flux-kbot-bootstrap/secrets-enc.yaml

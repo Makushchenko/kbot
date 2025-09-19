@@ -110,6 +110,9 @@ kubectl -n observability get servicemonitor otel-gateway -o yaml
 kubectl -n observability get pods -l app.kubernetes.io/name=grafana
 kubectl -n observability get secret grafana -o jsonpath='{.data.admin-password}' | base64 -d; echo
 kubectl -n observability port-forward svc/grafana 3001:80
+kubectl -n observability exec deploy/grafana -c grafana -- \
+  curl -s 'http://loki.observability.svc.cluster.local:3100/loki/api/v1/labels?since=10m' \
+  | jq -r '.data[]' | sort | egrep 'k8s_|service_name|host_name' 
 
 
 ####################################################################
@@ -122,7 +125,7 @@ k get all -n observability
 
 # --- OpenTelemetry Collector (gateway)
 kubectl -n $NS logs deploy/otel-gateway-collector --tail=200 -f
-kubectl logs -n observability deploy/otel-gateway-collector
+kubectl logs -n observability deploy/otel-gateway-collector -f
 kubectl logs -n observability deploy/otel-gateway-collector | grep -i error | tail -20
 
 # --- OpenTelemetry Operator (manager)
@@ -166,7 +169,6 @@ curl localhost:8889/metrics | grep kbot
 # --- Quick status helpers
 kubectl -n $NS get pods -o wide
 kubectl -n $NS get events --sort-by=.lastTimestamp | tail -n 50
-
 
 
 ####################################################################
@@ -276,6 +278,10 @@ kubectl -n "$FB_NS" get cm -o name | grep -i fluent | xargs -r kubectl -n "$FB_N
 
 # If you hardcoded an external IP (e.g., 34.118.231.214:4318), remove it and use the ClusterIP Service DNS.
 
+kubectl -n observability exec deploy/grafana -c grafana -- \
+  curl -s 'http://loki.observability.svc.cluster.local:3100/loki/api/v1/labels?since=10m' \
+  | jq -r '.data[]' | sort | egrep 'k8s_|service_name|host_name' 
+
 
 ####################################################################
 # FIX
@@ -315,45 +321,4 @@ kubectl -n observability logs ds/fluent-bit -c fluent-bit --tail=200 -f
 #
 # Grafana origin not allowed
 ####################################################################
-gcloud compute addresses create grafana-ip --global
-gcloud compute addresses describe grafana-ip --global --format='get(address)'
-# ---
-kubectl apply -f flux-kbot-bootstrap/observability/obs-grafana-ing.yaml
-kubectl -n observability get ingress grafana -o wide
-kubectl apply -f flux-kbot-bootstrap/observability/obs-grafana-backendconfig.yaml
-kubectl -n observability get bc grafana-backendconfig -o wide
-# ---
-kubectl apply -f flux-kbot-bootstrap/observability/obs-grafana-hrel.yaml
-flux reconcile hr grafana -n $NS
-kubectl -n observability get cm grafana -o jsonpath='{.data.grafana\.ini}'
-# ---
-kubectl -n observability get ingress grafana -o wide
-kubectl -n observability describe ingress grafana
-# wait until ADDRESS is set
-# then watch the LB turn healthy:
-gcloud compute backend-services list --global | grep grafana
-gcloud compute backend-services get-health grafana-backendconfig --global
-# ---
-kubectl -n observability get netpol loki-namespace-only -o yaml
-# ---
-kubectl apply -f flux-kbot-bootstrap/observability/obs-allow-gclb-to-grafana.yaml
-
-# --- Resources clean-up
-gcloud compute addresses delete grafana-ip --global --quiet
-gcloud compute addresses delete grafana-ip --global --quiet
-
-gcloud compute forwarding-rules list --global | grep -i grafana || true
-gcloud compute target-http-proxies list --global | grep -i grafana || true
-gcloud compute url-maps list --global | grep -i grafana || true
-gcloud compute backend-services list --global | grep -i grafana || true
-gcloud compute health-checks list --global | grep -i k8s || true
-
-gcloud compute backend-services delete <NAME> --global --quiet
-gcloud compute url-maps delete <NAME> --global --quiet
-gcloud compute target-http-proxies delete <NAME> --global --quiet
-gcloud compute forwarding-rules delete <NAME> --global --quiet
-gcloud compute health-checks delete <NAME> --global --quiet
-
-kubectl -n observability exec deploy/grafana -c grafana -- \
-  curl -s 'http://loki.observability.svc.cluster.local:3100/loki/api/v1/labels?since=10m' \
-  | jq -r '.data[]' | sort | egrep 'k8s_|service_name|host_name' 
+# --- Use local machine with localhost instead of Cloud Shell
