@@ -1,6 +1,6 @@
 # Observability Stack Deployment Guide
 
-Complete guide for deploying a production-ready observability stack using Flux, OpenTelemetry, Prometheus, Grafana, Loki, and Tempo on Kubernetes.
+Complete guide for deploying an observability stack using Flux, OpenTelemetry, Prometheus, Grafana, Loki, and Tempo on Kubernetes.
 
 ## Table of Contents
 
